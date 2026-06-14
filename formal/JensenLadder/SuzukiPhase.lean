@@ -22,8 +22,10 @@ With `phase` standing for `e^{i theta}`, the abstract boundary function is
 ```
 
 The odd branch is selected by `phase * c = 1`; the even branch is selected by
-`phase * c = -1`.  Converse statements require explicit nonzero probe
-hypotheses, because parity at a degenerate probe does not determine the phase.
+`phase * c = -1`.  When the supplied reflection scalar is unitary, both selected
+branches are unit-circle phases.  Converse statements require explicit nonzero
+probe hypotheses, because parity at a degenerate probe does not determine the
+phase.
 
 The last block records the equally algebraic parity of Suzuki's conjectural
 limit target: an even numerator divided by an odd denominator, with the even
@@ -62,6 +64,89 @@ reflection statement or `|c| = 1`. -/
 def DeficiencyReflection (Vplus Vminus : ℂ → ℂ) (c : ℂ) : Prop :=
   ∀ z : ℂ, Vminus z = c * Vplus (-z)
 
+/-- A scalar lies on the complex unit circle.
+
+This is the algebraic legality condition for using a complex scalar as a
+boundary phase.  It is written with `star` so the lemmas stay purely algebraic
+and do not depend on choosing a real argument. -/
+def UnitPhase (phase : ℂ) : Prop :=
+  phase * star phase = 1
+
+/-- Reflection in the Suzuki height variable. -/
+noncomputable def reflectedFunction (V : ℂ → ℂ) : ℂ → ℂ :=
+  fun z => V (-z)
+
+/-- Abstract scalar law for a squared complex norm.
+
+For the intended Suzuki deficiency vectors, this is the algebraic shadow of
+`‖c • v‖² = c * star c * ‖v‖²`.  The actual Hilbert-space norm and its
+domain/completion properties are deliberately external to this file. -/
+def ScalarNormScaling (normSq : (ℂ → ℂ) → ℂ) : Prop :=
+  ∀ (c : ℂ) (V : ℂ → ℂ),
+    normSq (fun z => c * V z) = c * star c * normSq V
+
+/-- Abstract reflection invariance for a squared norm. -/
+def ReflectionNormInvariant (normSq : (ℂ → ℂ) → ℂ) : Prop :=
+  ∀ V : ℂ → ℂ, normSq (reflectedFunction V) = normSq V
+
+/-- Normalized deficiency-reflection data forces the reflection scalar to be a
+unit-circle phase.
+
+This is the operator-theoretic socket behind the `|c|=1` claim: once a concrete
+Suzuki Hilbert space supplies scalar norm scaling, reflection norm invariance,
+and normalized `V_+`, `V_-`, the scalar in `V_-(z)=cV_+(-z)` is unitary. -/
+theorem unitPhase_of_deficiencyReflection_normalized_norm
+    (normSq : (ℂ → ℂ) → ℂ) {Vplus Vminus : ℂ → ℂ} {c : ℂ}
+    (hscale : ScalarNormScaling normSq)
+    (hreflectNorm : ReflectionNormInvariant normSq)
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hplus : normSq Vplus = 1)
+    (hminus : normSq Vminus = 1) :
+    UnitPhase c := by
+  rw [UnitPhase]
+  have hfun : Vminus = fun z : ℂ => c * reflectedFunction Vplus z := by
+    funext z
+    exact hreflect z
+  have hnorm : normSq Vminus = c * star c := by
+    rw [hfun, hscale, hreflectNorm, hplus]
+    ring
+  rw [hminus] at hnorm
+  exact hnorm.symm
+
+/-- Under a supplied deficiency reflection, the reflection scalar is recovered
+from any nonzero pointwise ratio `V_-(z) / V_+(-z)`.
+
+This is the formal version of the `c(a)` x-independence sanity gate: if the
+operator-theoretic reflection relation holds, every legal probe gives the same
+scalar. -/
+theorem reflectionScalar_eq_ratio_at
+    (Vplus Vminus : ℂ → ℂ) {c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hden : Vplus (-z) ≠ 0) :
+    c = Vminus z / Vplus (-z) := by
+  exact (by
+    rw [hreflect z]
+    field_simp [hden] : Vminus z / Vplus (-z) = c).symm
+
+/-- Computational orientation of `reflectionScalar_eq_ratio_at`. -/
+theorem reflectionRatio_eq_reflectionScalar_at
+    (Vplus Vminus : ℂ → ℂ) {c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hden : Vplus (-z) ≠ 0) :
+    Vminus z / Vplus (-z) = c := by
+  rw [hreflect z]
+  field_simp [hden]
+
+/-- Under a supplied deficiency reflection, all nonzero pointwise ratios agree. -/
+theorem reflectionRatio_constant
+    (Vplus Vminus : ℂ → ℂ) {c z w : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hz : Vplus (-z) ≠ 0)
+    (hw : Vplus (-w) ≠ 0) :
+    Vminus z / Vplus (-z) = Vminus w / Vplus (-w) := by
+  rw [reflectionRatio_eq_reflectionScalar_at Vplus Vminus hreflect hz,
+    reflectionRatio_eq_reflectionScalar_at Vplus Vminus hreflect hw]
+
 /-- Substituting the supplied deficiency-reflection relation turns the raw
 Suzuki boundary expression into `suzukiW`. -/
 theorem rawSuzukiW_eq_suzukiW_of_deficiencyReflection
@@ -86,6 +171,61 @@ noncomputable def oddPhaseOfReflection (c : ℂ) : ℂ :=
 /-- The algebraic even-branch phase selected by a nonzero reflection scalar `c`. -/
 noncomputable def evenPhaseOfReflection (c : ℂ) : ℂ :=
   -c⁻¹
+
+/-- A unit-circle phase is nonzero. -/
+theorem unitPhase_ne_zero {phase : ℂ} (hphase : UnitPhase phase) :
+    phase ≠ 0 := by
+  intro hzero
+  rw [UnitPhase, hzero] at hphase
+  norm_num at hphase
+
+/-- The inverse of a unit-circle phase is again a unit-circle phase. -/
+theorem unitPhase_inv {phase : ℂ} (hphase : UnitPhase phase) :
+    UnitPhase phase⁻¹ := by
+  rw [UnitPhase] at hphase ⊢
+  rw [star_inv₀]
+  have hrev : star phase * phase = 1 := by
+    rw [mul_comm]
+    exact hphase
+  calc
+    phase⁻¹ * (star phase)⁻¹ = (star phase * phase)⁻¹ := by
+      rw [mul_inv_rev]
+    _ = 1 := by rw [hrev, inv_one]
+
+/-- Negating a unit-circle phase stays on the unit circle. -/
+theorem unitPhase_neg {phase : ℂ} (hphase : UnitPhase phase) :
+    UnitPhase (-phase) := by
+  rw [UnitPhase] at hphase ⊢
+  rw [star_neg]
+  calc
+    (-phase) * -star phase = phase * star phase := by ring
+    _ = 1 := hphase
+
+/-- The selected odd-branch reflection phase is unitary whenever the reflection
+scalar is unitary. -/
+theorem oddPhaseOfReflection_unitPhase {c : ℂ}
+    (hc : UnitPhase c) :
+    UnitPhase (oddPhaseOfReflection c) := by
+  simpa [oddPhaseOfReflection] using unitPhase_inv hc
+
+/-- The selected even-branch reflection phase is unitary whenever the reflection
+scalar is unitary. -/
+theorem evenPhaseOfReflection_unitPhase {c : ℂ}
+    (hc : UnitPhase c) :
+    UnitPhase (evenPhaseOfReflection c) := by
+  simpa [evenPhaseOfReflection] using unitPhase_neg (unitPhase_inv hc)
+
+/-- If the deficiency-reflection scalar is unitary, then every nonzero
+pointwise reflection ratio is a unit-circle phase. -/
+theorem reflectionRatio_unitPhase_at
+    (Vplus Vminus : ℂ → ℂ) {c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : UnitPhase c)
+    (hden : Vplus (-z) ≠ 0) :
+    UnitPhase (Vminus z / Vplus (-z)) := by
+  have hratio : Vminus z / Vplus (-z) = c :=
+    reflectionRatio_eq_reflectionScalar_at Vplus Vminus hreflect hden
+  simpa [hratio] using hc
 
 /-- The selected odd-branch phase satisfies `phase * c = 1`. -/
 theorem oddPhaseOfReflection_mul_reflection_eq_one
@@ -194,6 +334,20 @@ theorem rawSuzukiW_odd_of_oddPhaseOfReflection
   rawSuzukiW_odd_of_phase_mul_reflection_eq_one Vplus Vminus hreflect
     (oddPhaseOfReflection_mul_reflection_eq_one hc)
 
+/-- A unitary reflection scalar supplies a legal unit-circle odd phase and makes
+the raw Suzuki boundary expression odd. -/
+theorem oddPhase_unitPhase_and_rawSuzukiW_odd
+    (Vplus Vminus : ℂ → ℂ) {c : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : UnitPhase c) :
+    UnitPhase (oddPhaseOfReflection c) ∧
+      ∀ z : ℂ,
+        rawSuzukiW Vplus Vminus (oddPhaseOfReflection c) (-z) =
+          -rawSuzukiW Vplus Vminus (oddPhaseOfReflection c) z := by
+  exact ⟨oddPhaseOfReflection_unitPhase hc,
+    rawSuzukiW_odd_of_oddPhaseOfReflection Vplus Vminus hreflect
+      (unitPhase_ne_zero hc)⟩
+
 /-- Raw even branch after a supplied deficiency reflection. -/
 theorem rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one
     (Vplus Vminus : ℂ → ℂ) {phase c : ℂ}
@@ -215,6 +369,20 @@ theorem rawSuzukiW_even_of_evenPhaseOfReflection
         rawSuzukiW Vplus Vminus (evenPhaseOfReflection c) z :=
   rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one Vplus Vminus hreflect
     (evenPhaseOfReflection_mul_reflection_eq_neg_one hc)
+
+/-- A unitary reflection scalar supplies a legal unit-circle even phase and
+makes the raw Suzuki boundary expression even. -/
+theorem evenPhase_unitPhase_and_rawSuzukiW_even
+    (Vplus Vminus : ℂ → ℂ) {c : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : UnitPhase c) :
+    UnitPhase (evenPhaseOfReflection c) ∧
+      ∀ z : ℂ,
+        rawSuzukiW Vplus Vminus (evenPhaseOfReflection c) (-z) =
+          rawSuzukiW Vplus Vminus (evenPhaseOfReflection c) z := by
+  exact ⟨evenPhaseOfReflection_unitPhase hc,
+    rawSuzukiW_even_of_evenPhaseOfReflection Vplus Vminus hreflect
+      (unitPhase_ne_zero hc)⟩
 
 /-- Under a nonzero odd probe at `z`, oddness at `z` forces
 `phase * c = 1`. -/

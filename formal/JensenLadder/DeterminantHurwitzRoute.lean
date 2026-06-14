@@ -275,6 +275,105 @@ theorem basepointValue_tendsto_of_factor_tendsto
   simpa [hT] using hprod.congr' hcongr.symm
 
 /--
+Scalar ratio-normalization consumer.
+
+If the target basepoint value is nonzero and the normalized ratio `F_n / T`
+converges to `1`, then the finite basepoint values converge to `T`.
+-/
+theorem basepointValue_tendsto_of_ratio_tendsto
+    {ι : Type*} {l : Filter ι}
+    (F : ι → ℂ) (T : ℂ)
+    (hT : T ≠ 0)
+    (hratio : Tendsto (fun n => F n / T) l (𝓝 1)) :
+    Tendsto F l (𝓝 T) := by
+  have hmul : Tendsto (fun n => (F n / T) * T) l (𝓝 (1 * T)) :=
+    hratio.mul tendsto_const_nhds
+  have hcongr : (fun n => (F n / T) * T) =ᶠ[l] F :=
+    Filter.Eventually.of_forall fun n => by
+      field_simp [hT]
+  simpa [one_mul] using hmul.congr' hcongr
+
+/--
+First-derivative centering excludes a residual exponential slope.
+
+This is the scalar normalization row used when a reconstruction has left a
+possible factor `exp(a z)`: if its derivative at the origin is forced to vanish,
+then the slope `a` is zero.
+-/
+theorem residualExponential_slope_eq_zero_of_deriv_zero
+    (a : ℂ)
+    (hcenter : deriv (fun z : ℂ => Complex.exp (a * z)) 0 = 0) :
+    a = 0 := by
+  have hderiv : deriv (fun z : ℂ => Complex.exp (a * z)) 0 = a := by
+    have hlin : HasDerivAt (fun z : ℂ => a * z) a 0 := by
+      simpa using (hasDerivAt_id (0 : ℂ)).const_mul a
+    have hexp : HasDerivAt (fun z : ℂ => Complex.exp (a * z))
+        (Complex.exp (a * 0) * a) 0 :=
+      hlin.cexp
+    simpa using hexp.deriv
+  rw [hderiv] at hcenter
+  exact hcenter
+
+/-- Once first-derivative centering kills the slope, the residual exponential
+factor is identically `1`. -/
+theorem residualExponential_eq_one_of_deriv_zero
+    (a : ℂ)
+    (hcenter : deriv (fun z : ℂ => Complex.exp (a * z)) 0 = 0) :
+    ∀ z : ℂ, Complex.exp (a * z) = 1 := by
+  intro z
+  have ha : a = 0 := residualExponential_slope_eq_zero_of_deriv_zero a hcenter
+  simp [ha]
+
+/--
+Evenness under the functional-equation reflection excludes a residual
+exponential slope.
+
+If the leftover scalar factor `exp(a z)` is invariant under `z ↦ -z`, then
+differentiating at the origin gives `-a = a`, hence `a = 0`.
+-/
+theorem residualExponential_slope_eq_zero_of_even
+    (a : ℂ)
+    (heven : ∀ z : ℂ, Complex.exp (a * (-z)) = Complex.exp (a * z)) :
+    a = 0 := by
+  have hfun : (fun z : ℂ => Complex.exp (a * (-z))) =
+      (fun z : ℂ => Complex.exp (a * z)) := by
+    funext z
+    exact heven z
+  have hderiv_eq : deriv (fun z : ℂ => Complex.exp (a * (-z))) 0 =
+      deriv (fun z : ℂ => Complex.exp (a * z)) 0 := by
+    simpa using congrArg (fun f : ℂ → ℂ => deriv f 0) hfun
+  have hleft : deriv (fun z : ℂ => Complex.exp (a * (-z))) 0 = -a := by
+    have hneg : HasDerivAt (fun z : ℂ => -z) (-1 : ℂ) 0 := by
+      simpa using (hasDerivAt_id (0 : ℂ)).neg
+    have hlin : HasDerivAt (fun z : ℂ => a * (-z)) (-a) 0 := by
+      simpa using hneg.const_mul a
+    have hexp : HasDerivAt (fun z : ℂ => Complex.exp (a * (-z)))
+        (Complex.exp (a * (-0)) * (-a)) 0 :=
+      hlin.cexp
+    simpa using hexp.deriv
+  have hright : deriv (fun z : ℂ => Complex.exp (a * z)) 0 = a := by
+    have hlin : HasDerivAt (fun z : ℂ => a * z) a 0 := by
+      simpa using (hasDerivAt_id (0 : ℂ)).const_mul a
+    have hexp : HasDerivAt (fun z : ℂ => Complex.exp (a * z))
+        (Complex.exp (a * 0) * a) 0 :=
+      hlin.cexp
+    simpa using hexp.deriv
+  have hneg_eq : -a = a := by
+    rw [hleft, hright] at hderiv_eq
+    exact hderiv_eq
+  exact neg_eq_self.mp hneg_eq
+
+/-- Once reflection-evenness kills the slope, the residual exponential factor is
+identically `1`. -/
+theorem residualExponential_eq_one_of_even
+    (a : ℂ)
+    (heven : ∀ z : ℂ, Complex.exp (a * (-z)) = Complex.exp (a * z)) :
+    ∀ z : ℂ, Complex.exp (a * z) = 1 := by
+  intro z
+  have ha : a = 0 := residualExponential_slope_eq_zero_of_even a heven
+  simp [ha]
+
+/--
 Derivative/basepoint determinant Hurwitz bridge with the basepoint convergence
 discharged by a declared two-factor normalization.
 -/
@@ -324,6 +423,169 @@ theorem riemannHypothesis_of_realZeros_and_deriv_tendsto_xiEntire_sequence_of_fa
   (RHReduction.riemannHypothesis_iff_regular_riemannXi_zeros_real).2
     (D.regularXiZerosReal_of_realZeros_and_deriv_tendsto_xiEntire_sequence_of_factor_tendsto_at_basepoint
       scale w₀ C G Clim Glim hFa hreal hderiv hfactor hXiFactor hC hG)
+
+/--
+Derivative/basepoint determinant Hurwitz bridge with the basepoint convergence
+discharged by a nonzero target value and ratio normalization
+`F_n(w₀) / xiEntire(w₀) -> 1`.
+-/
+theorem regularXiZerosReal_of_realZeros_and_deriv_tendsto_xiEntire_sequence_of_basepoint_ratio_tendsto
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale)
+    (w₀ : ℂ)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (D.determinant (scale n)) Set.univ)
+    (hreal : D.AllZerosReal)
+    (hderiv : TendstoLocallyUniformlyOn
+      (fun n z => deriv (D.determinant (scale n)) z)
+      (deriv HurwitzBridge.xiEntire) Filter.atTop Set.univ)
+    (hXi_ne : HurwitzBridge.xiEntire w₀ ≠ 0)
+    (hratio : Tendsto
+      (fun n => D.determinant (scale n) w₀ / HurwitzBridge.xiEntire w₀)
+      Filter.atTop (𝓝 1)) :
+    ∀ z : ℂ, RHReduction.riemannXiRegularZero z → z.im = 0 := by
+  have hbase : Tendsto (fun n => D.determinant (scale n) w₀) Filter.atTop
+      (𝓝 (HurwitzBridge.xiEntire w₀)) :=
+    basepointValue_tendsto_of_ratio_tendsto
+      (fun n => D.determinant (scale n) w₀)
+      (HurwitzBridge.xiEntire w₀) hXi_ne hratio
+  exact
+    D.regularXiZerosReal_of_realZeros_and_deriv_tendsto_xiEntire_sequence_at_basepoint
+      scale w₀ hFa hreal hderiv hbase
+
+/--
+Determinant real-zero data, derivative convergence, and nonzero basepoint ratio
+normalization prove mathlib's `RiemannHypothesis`.
+-/
+theorem riemannHypothesis_of_realZeros_and_deriv_tendsto_xiEntire_sequence_of_basepoint_ratio_tendsto
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale)
+    (w₀ : ℂ)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (D.determinant (scale n)) Set.univ)
+    (hreal : D.AllZerosReal)
+    (hderiv : TendstoLocallyUniformlyOn
+      (fun n z => deriv (D.determinant (scale n)) z)
+      (deriv HurwitzBridge.xiEntire) Filter.atTop Set.univ)
+    (hXi_ne : HurwitzBridge.xiEntire w₀ ≠ 0)
+    (hratio : Tendsto
+      (fun n => D.determinant (scale n) w₀ / HurwitzBridge.xiEntire w₀)
+      Filter.atTop (𝓝 1)) :
+    RiemannHypothesis :=
+  (RHReduction.riemannHypothesis_iff_regular_riemannXi_zeros_real).2
+    (D.regularXiZerosReal_of_realZeros_and_deriv_tendsto_xiEntire_sequence_of_basepoint_ratio_tendsto
+      scale w₀ hFa hreal hderiv hXi_ne hratio)
+
+/--
+Eigenvalue dictionary plus canonical-product control for a determinant sequence.
+
+The finite dictionary rows say that the zeros of each finite determinant are
+exactly represented by real eigenheights.  This is still not enough to identify
+the limiting zero set.  The load-bearing analytic row is
+`canonicalProductControl`: it stands for the genus/product/tail estimates that
+upgrade finite eigenvalue data to locally-uniform convergence of normalized
+determinants to the pole-cancelled `Ξ` endpoint.
+-/
+structure EigenvalueProductBridge
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale) where
+  EigenLabel : D.Scale → Type u
+  eigenHeight : ∀ a : D.Scale, EigenLabel a → ℝ
+  eigen_zero :
+    ∀ (a : D.Scale) (γ : EigenLabel a),
+      D.determinant a (eigenHeight a γ : ℂ) = 0
+  zero_complete :
+    ∀ (a : D.Scale) (z : ℂ), D.determinant a z = 0 →
+      ∃ γ : EigenLabel a, z = (eigenHeight a γ : ℂ)
+  canonicalProductControl : Prop
+  locallyUniformToXi_of_canonicalProductControl :
+    canonicalProductControl →
+      TendstoLocallyUniformlyOn (fun n => D.determinant (scale n))
+        HurwitzBridge.xiEntire Filter.atTop Set.univ
+
+namespace EigenvalueProductBridge
+
+/-- A finite real eigenvalue dictionary forces every finite determinant zero to
+be real. -/
+theorem allZerosReal
+    {D : DeterminantApproximants.{u}} {scale : ℕ → D.Scale}
+    (B : EigenvalueProductBridge D scale) :
+    D.AllZerosReal := by
+  intro a z hz
+  rcases B.zero_complete a z hz with ⟨γ, hzγ⟩
+  rw [hzγ]
+  simp
+
+/--
+Eigenvalue dictionary plus canonical-product control supplies the concrete
+determinant Hurwitz bridge.
+
+The analytic substance remains the `canonicalProductControl` row: it must turn
+finite eigenvalue/product data into actual locally-uniform determinant
+convergence.
+-/
+theorem regularXiZerosReal
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale)
+    (B : EigenvalueProductBridge D scale)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (D.determinant (scale n)) Set.univ)
+    (hcontrol : B.canonicalProductControl) :
+    ∀ z : ℂ, RHReduction.riemannXiRegularZero z → z.im = 0 :=
+  D.regularXiZerosReal_of_realZeros_and_tendsto_xiEntire_sequence
+    scale hFa B.allZerosReal
+    (B.locallyUniformToXi_of_canonicalProductControl hcontrol)
+
+/-- Eigenvalue dictionary plus canonical-product control proves mathlib's
+`RiemannHypothesis` through the determinant Hurwitz route. -/
+theorem riemannHypothesis
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale)
+    (B : EigenvalueProductBridge D scale)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (D.determinant (scale n)) Set.univ)
+    (hcontrol : B.canonicalProductControl) :
+    RiemannHypothesis :=
+  (RHReduction.riemannHypothesis_iff_regular_riemannXi_zeros_real).2
+    (B.regularXiZerosReal D scale hFa hcontrol)
+
+/--
+A non-real regular `Ξ` zero refutes the canonical-product/tail-control row,
+provided the finite determinant zeros are exactly represented by real
+eigenheights.
+-/
+theorem not_canonicalProductControl_of_nonrealRegularXiZero
+    (D : DeterminantApproximants.{u})
+    (scale : ℕ → D.Scale)
+    (B : EigenvalueProductBridge D scale)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (D.determinant (scale n)) Set.univ)
+    {z : ℂ}
+    (hz : RHReduction.riemannXiRegularZero z)
+    (hzim : z.im ≠ 0) :
+    ¬ B.canonicalProductControl := by
+  intro hcontrol
+  exact hzim (B.regularXiZerosReal D scale hFa hcontrol z hz)
+
+end EigenvalueProductBridge
+
+/--
+Packaged determinant certificate whose convergence row is refined as an
+eigenvalue dictionary plus canonical-product/tail control.
+-/
+structure EigenvalueProductRHCertificate where
+  approximants : DeterminantApproximants.{u}
+  scale : ℕ → approximants.Scale
+  bridge : EigenvalueProductBridge approximants scale
+  determinantAnalytic :
+    ∀ n, AnalyticOnNhd ℂ (approximants.determinant (scale n)) Set.univ
+  canonicalProductControl : bridge.canonicalProductControl
+
+namespace EigenvalueProductRHCertificate
+
+/-- A packaged eigenvalue/product determinant certificate proves mathlib's RH. -/
+theorem riemannHypothesis
+    (cert : EigenvalueProductRHCertificate.{u}) :
+    RiemannHypothesis :=
+  cert.bridge.riemannHypothesis cert.approximants cert.scale
+    cert.determinantAnalytic cert.canonicalProductControl
+
+end EigenvalueProductRHCertificate
 
 /--
 The determinant-route Hurwitz row.

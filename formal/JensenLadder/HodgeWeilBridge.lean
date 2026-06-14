@@ -40,6 +40,92 @@ noncomputable def quadraticForm
     (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) : ℝ :=
   ∑ i : ι, ∑ j : ι, v i * entry D i j * v j
 
+/-- Archimedean part of the finite semilocal Weil quadratic form. -/
+noncomputable def archQuadraticForm
+    (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) : ℝ :=
+  ∑ i : ι, ∑ j : ι, v i * archPart D i j * v j
+
+/-- Prime/local perturbation part of the finite semilocal Weil quadratic form. -/
+noncomputable def primeQuadraticForm
+    (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) : ℝ :=
+  ∑ i : ι, ∑ j : ι, v i * primePart D i j * v j
+
+/-- One local row's contribution to the prime/local quadratic form. -/
+noncomputable def localPrimeQuadraticForm
+    (D : SemilocalFiniteWeilData ι κ ℝ) (q : κ) (v : ι -> ℝ) : ℝ :=
+  ∑ i : ι, ∑ j : ι,
+    v i * (D.primeCoeff q * D.primeKernel q i j) * v j
+
+/-- The finite semilocal Weil quadratic form is the archimedean part minus the
+prime/local perturbation part. -/
+theorem quadraticForm_eq_arch_sub_prime
+    (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) :
+    quadraticForm D v = archQuadraticForm D v - primeQuadraticForm D v := by
+  calc
+    quadraticForm D v =
+        ∑ i : ι, ∑ j : ι,
+          (v i * archPart D i j * v j -
+            v i * primePart D i j * v j) := by
+      unfold quadraticForm
+      apply Finset.sum_congr rfl
+      intro i _hi
+      apply Finset.sum_congr rfl
+      intro j _hj
+      rw [entry]
+      ring
+    _ = ∑ i : ι,
+          ((∑ j : ι, v i * archPart D i j * v j) -
+            (∑ j : ι, v i * primePart D i j * v j)) := by
+      apply Finset.sum_congr rfl
+      intro i _hi
+      exact
+        (Finset.sum_sub_distrib
+          (s := (Finset.univ : Finset ι))
+          (f := fun j : ι => v i * archPart D i j * v j)
+          (g := fun j : ι => v i * primePart D i j * v j))
+    _ = archQuadraticForm D v - primeQuadraticForm D v := by
+      rw [archQuadraticForm, primeQuadraticForm]
+      exact
+        (Finset.sum_sub_distrib
+          (s := (Finset.univ : Finset ι))
+          (f := fun i : ι => ∑ j : ι, v i * archPart D i j * v j)
+          (g := fun i : ι => ∑ j : ι, v i * primePart D i j * v j))
+
+/-- The prime/local quadratic form is the finite sum of its local-row
+contributions. -/
+theorem primeQuadraticForm_eq_sum_localPrimeQuadraticForm
+    (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) :
+    primeQuadraticForm D v =
+      ∑ q : κ, localPrimeQuadraticForm D q v := by
+  let f : ι -> ι -> κ -> ℝ :=
+    fun i j q => v i * (D.primeCoeff q * D.primeKernel q i j) * v j
+  calc
+    primeQuadraticForm D v = ∑ i : ι, ∑ j : ι, ∑ q : κ, f i j q := by
+      unfold primeQuadraticForm
+      apply Finset.sum_congr rfl
+      intro i _hi
+      apply Finset.sum_congr rfl
+      intro j _hj
+      simp [primePart, f, Finset.mul_sum, Finset.sum_mul]
+    _ = ∑ i : ι, ∑ q : κ, ∑ j : ι, f i j q := by
+      apply Finset.sum_congr rfl
+      intro i _hi
+      exact Finset.sum_comm
+    _ = ∑ q : κ, ∑ i : ι, ∑ j : ι, f i j q := by
+      exact Finset.sum_comm
+    _ = ∑ q : κ, localPrimeQuadraticForm D q v := by
+      simp [localPrimeQuadraticForm, f]
+
+/-- Fully expanded semilocal split: archimedean quadratic form minus the sum of
+local prime-row quadratic forms. -/
+theorem quadraticForm_eq_arch_sub_sum_localPrimeQuadraticForm
+    (D : SemilocalFiniteWeilData ι κ ℝ) (v : ι -> ℝ) :
+    quadraticForm D v =
+      archQuadraticForm D v -
+        ∑ q : κ, localPrimeQuadraticForm D q v := by
+  rw [quadraticForm_eq_arch_sub_prime,
+    primeQuadraticForm_eq_sum_localPrimeQuadraticForm]
+
 /-- Positive semidefiniteness of the finite semilocal Weil quadratic form. -/
 def PositiveSemidefinite
     (D : SemilocalFiniteWeilData ι κ ℝ) : Prop :=

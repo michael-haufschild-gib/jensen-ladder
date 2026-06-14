@@ -13,10 +13,19 @@ along several routes, each carrying its own falsifier.
 
 ## What is formally established
 
-Full `lake build` is green (43 modules); no `sorry`/`admit`; no added `axiom`
+Full `lake build` is green (81 modules); no `sorry`/`admit`; no added `axiom`
 declarations. Within that kernel-checked discipline the repository proves
 **reductions**, not RH:
 
+- **`HurwitzRealRootedLimit`** — the headline reduction **`det_reg → Ξ ⟹ RH`**,
+  axiom-clean (`[propext, Classical.choice, Quot.sound]`): if entire, only-real-zero
+  approximants `Fₙ` converge locally uniformly on ℂ to the entire `xiEntire`, then
+  `RiemannHypothesis`. Built on a *from-scratch* Lean formalization of the argument
+  principle (zeros-in-a-contour) and the nowhere-zero Hurwitz theorem — both absent
+  from mathlib. The `DeterminantHurwitzRoute` / `CCMGroundStateRoute` consumers
+  specialize it to the CCM finite-determinant family (entire + real-rooted for free
+  by self-adjointness; convergence is the only open row). See
+  [`docs/reduction_det_reg_to_xi_to_RH.md`](docs/reduction_det_reg_to_xi_to_RH.md).
 - **`RHReduction`** — RH ⟺ reality of the regular Ξ zeros (the Pólya–Jensen /
   mathlib `RiemannHypothesis` bridge).
 - **`ModelToXiTransfer`** — RH ⟸ (a model endpoint such as Theorem M) +
@@ -61,7 +70,7 @@ problem.
 ## Verification
 
 ```sh
-cd formal && lake build                          # green, 43 modules
+cd formal && lake build                          # green, 81 modules (8557 jobs)
 # confirm axiom profile (expect: [propext, Classical.choice, Quot.sound]):
 #   echo 'import JensenLadder' > /tmp/ax.lean ; ...; #print axioms <endpoint>
 rg -n '(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' formal/JensenLadder   # none

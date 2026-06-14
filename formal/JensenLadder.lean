@@ -43,10 +43,15 @@ import JensenLadder.CVSSpectralRoute
 import JensenLadder.DerivativeBasepointConvergence
 import JensenLadder.DeterminantHurwitzRoute
 import JensenLadder.HurwitzRealRootedLimit
+import JensenLadder.CanonicalProductGenusOne
+import JensenLadder.CanonicalProductFactorZeros
+import JensenLadder.GenusOneDeterminantControl
+import JensenLadder.ScatteringParityNoGo
 import JensenLadder.CCMGroundStateRoute
 import JensenLadder.CCMGroundStateError
 import JensenLadder.CVSGapPreservation
 import JensenLadder.CVSKatoWeyl
+import JensenLadder.CVSFiniteGapScreen
 import JensenLadder.CVSKatoSmallNoGo
 import JensenLadder.CVSMarginalLimit
 import JensenLadder.SpectralPollutionFreeLimit

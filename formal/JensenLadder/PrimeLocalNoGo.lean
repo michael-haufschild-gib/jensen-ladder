@@ -286,3 +286,39 @@ theorem not_forall_nonnegative_diagonal_add_oneSidedPrimeKernel_of_delta_lt_unif
 
 end PrimeLocalNoGo
 end JensenLadder
+
+namespace JensenLadder
+namespace PrimeLocalNoGo
+
+/-- The exact local threshold dominates the square scale `r^2`. -/
+theorem sq_le_uniformLocalDiagonalThreshold {r : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1) :
+    r ^ 2 <= uniformLocalDiagonalThreshold r := by
+  unfold uniformLocalDiagonalThreshold
+  have hden : 0 < 1 + r := by nlinarith
+  rw [le_div_iff₀ hden]
+  nlinarith
+
+/-- In the prime range, the exact local threshold strictly dominates `r^2`. -/
+theorem sq_lt_uniformLocalDiagonalThreshold {r : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1) :
+    r ^ 2 < uniformLocalDiagonalThreshold r := by
+  unfold uniformLocalDiagonalThreshold
+  have hden : 0 < 1 + r := by nlinarith
+  rw [lt_div_iff₀ hden]
+  have hpos : 0 < r * (1 - r) * (1 + r) := by positivity
+  nlinarith
+
+/-- Finite packets inherit the threshold lower bound term by term. -/
+theorem sum_sq_le_sum_uniformLocalDiagonalThreshold {α : Type*}
+    (s : Finset α) (r : α -> ℝ)
+    (hr0 : ∀ a ∈ s, 0 < r a)
+    (hr1 : ∀ a ∈ s, r a < 1) :
+    (∑ a ∈ s, r a ^ 2) <= ∑ a ∈ s, uniformLocalDiagonalThreshold (r a) := by
+  exact Finset.sum_le_sum fun a ha =>
+    sq_le_uniformLocalDiagonalThreshold (hr0 a ha) (hr1 a ha)
+
+end PrimeLocalNoGo
+end JensenLadder
