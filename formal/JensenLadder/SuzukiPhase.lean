@@ -227,6 +227,34 @@ theorem reflectionRatio_unitPhase_at
     reflectionRatio_eq_reflectionScalar_at Vplus Vminus hreflect hden
   simpa [hratio] using hc
 
+/-- The odd-branch phase computed directly from a nonzero pointwise reflection
+ratio.  In the intended Suzuki harness this is the algebraic form of
+`theta(a) = -arg c(a)` without choosing an argument. -/
+noncomputable def oddPhaseFromReflectionRatio
+    (Vplus Vminus : ℂ → ℂ) (z : ℂ) : ℂ :=
+  (Vminus z / Vplus (-z))⁻¹
+
+/-- The pointwise-ratio phase agrees with the abstract selected odd phase when
+the supplied deficiency-reflection relation holds. -/
+theorem oddPhaseFromReflectionRatio_eq_oddPhaseOfReflection
+    (Vplus Vminus : ℂ → ℂ) {c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hden : Vplus (-z) ≠ 0) :
+    oddPhaseFromReflectionRatio Vplus Vminus z = oddPhaseOfReflection c := by
+  rw [oddPhaseFromReflectionRatio, oddPhaseOfReflection]
+  rw [reflectionRatio_eq_reflectionScalar_at Vplus Vminus hreflect hden]
+
+/-- The pointwise-ratio odd phase is a legal unit-circle phase when the
+reflection scalar is unitary. -/
+theorem oddPhaseFromReflectionRatio_unitPhase
+    (Vplus Vminus : ℂ → ℂ) {c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : UnitPhase c)
+    (hden : Vplus (-z) ≠ 0) :
+    UnitPhase (oddPhaseFromReflectionRatio Vplus Vminus z) := by
+  rw [oddPhaseFromReflectionRatio_eq_oddPhaseOfReflection Vplus Vminus hreflect hden]
+  exact oddPhaseOfReflection_unitPhase hc
+
 /-- The selected odd-branch phase satisfies `phase * c = 1`. -/
 theorem oddPhaseOfReflection_mul_reflection_eq_one
     {c : ℂ}
@@ -333,6 +361,19 @@ theorem rawSuzukiW_odd_of_oddPhaseOfReflection
         -rawSuzukiW Vplus Vminus (oddPhaseOfReflection c) z :=
   rawSuzukiW_odd_of_phase_mul_reflection_eq_one Vplus Vminus hreflect
     (oddPhaseOfReflection_mul_reflection_eq_one hc)
+
+/-- The odd phase computed from any nonzero pointwise reflection ratio makes the
+raw Suzuki boundary expression odd. -/
+theorem rawSuzukiW_odd_of_oddPhaseFromReflectionRatio
+    (Vplus Vminus : ℂ → ℂ) {c probe : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : c ≠ 0)
+    (hden : Vplus (-probe) ≠ 0) :
+    ∀ z : ℂ,
+      rawSuzukiW Vplus Vminus (oddPhaseFromReflectionRatio Vplus Vminus probe) (-z) =
+        -rawSuzukiW Vplus Vminus (oddPhaseFromReflectionRatio Vplus Vminus probe) z := by
+  rw [oddPhaseFromReflectionRatio_eq_oddPhaseOfReflection Vplus Vminus hreflect hden]
+  exact rawSuzukiW_odd_of_oddPhaseOfReflection Vplus Vminus hreflect hc
 
 /-- A unitary reflection scalar supplies a legal unit-circle odd phase and makes
 the raw Suzuki boundary expression odd. -/
