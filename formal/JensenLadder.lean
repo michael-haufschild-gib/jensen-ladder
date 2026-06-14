@@ -28,7 +28,9 @@ import JensenLadder.SpectralRealization
 import JensenLadder.SpectralFaithfulnessGap
 import JensenLadder.MomentProblemCarrier
 import JensenLadder.DeningerCarrier
+import JensenLadder.ComplexSpectralDeterminantCarrier
 import JensenLadder.DeningerFlowUnitary
+import JensenLadder.FriedDeningerTorsionCarrier
 import JensenLadder.ArithmeticSiteCarrier
 import JensenLadder.HodgeIndexCarrier
 import JensenLadder.HodgeWeilBridge
@@ -50,6 +52,8 @@ import JensenLadder.SquaredDeterminantFinite
 import JensenLadder.SquaredDeterminantGauge
 import JensenLadder.SquaredVariablePullback
 import JensenLadder.FredholmSquaredCarrier
+import JensenLadder.BurnolCriticalSystems
+import JensenLadder.MeyerForkASquaredDeterminant
 import JensenLadder.DiagonalFredholmProduct
 import JensenLadder.SquaredDeterminantApproximation
 import JensenLadder.SquaredDeterminantZeroTransfer

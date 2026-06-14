@@ -121,10 +121,10 @@ theorem retwistedStar_nonnegative_of_responseBudget
     (harch : 0 < A.arch)
     (hbudget : A.responseBudget <= A.arch) :
     0 <=
-      (AbsoluteBudgetFakeFamilyBlindness.StarAssembly.retwist A twist).form x y :=
-  AbsoluteBudgetFakeFamilyBlindness.StarAssembly
-    .form_nonnegative_retwist_of_responseBudget_le_arch
-      A twist x y htwist harch hbudget
+      (_root_.JensenLadder.AbsoluteBudgetFakeFamilyBlindness.StarAssembly.retwist
+        A twist).form x y :=
+  _root_.JensenLadder.AbsoluteBudgetFakeFamilyBlindness.StarAssembly.form_nonnegative_retwist_of_responseBudget_le_arch
+    A twist x y htwist harch hbudget
 
 end SchurBudgetCalibration
 
