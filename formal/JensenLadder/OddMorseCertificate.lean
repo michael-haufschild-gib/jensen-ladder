@@ -44,6 +44,59 @@ open MorseCriterion
 
 universe u
 
+/-- A two-region cover of a scale parameter.
+
+The intended use is the Suzuki/Yoshida split between a small-`a` theorem and
+the remaining large-tail positivity problem.  This is purely bookkeeping: the
+cover itself proves no sign information. -/
+structure ScaleCover (Scale : Type u) where
+  small : Scale → Prop
+  large : Scale → Prop
+  cover : ∀ a : Scale, small a ∨ large a
+
+namespace ScaleCover
+
+/-- The ordered cutoff cover `a ≤ cutoff` or `cutoff ≤ a`. -/
+def ofCutoff {Scale : Type u} [LinearOrder Scale] (cutoff : Scale) :
+    ScaleCover Scale where
+  small a := a ≤ cutoff
+  large a := cutoff ≤ a
+  cover a := le_total a cutoff
+
+end ScaleCover
+
+/-- Bottom nonnegativity restricted to a region of scales. -/
+def BottomNonnegativeOn {Scale : Type u}
+    (bottom : Scale → ℝ) (region : Scale → Prop) : Prop :=
+  ∀ a : Scale, region a → 0 ≤ bottom a
+
+/-- A regional lower-to-upper bottom comparison. -/
+def BottomLeOn {Scale : Type u}
+    (lower upper : Scale → ℝ) (region : Scale → Prop) : Prop :=
+  ∀ a : Scale, region a → lower a ≤ upper a
+
+/-- Regional nonnegativity transfers across a regional bottom comparison. -/
+theorem bottomNonnegativeOn_of_leOn
+    {Scale : Type u} {lower upper : Scale → ℝ} {region : Scale → Prop}
+    (hlower : BottomNonnegativeOn lower region)
+    (hle : BottomLeOn lower upper region) :
+    BottomNonnegativeOn upper region := by
+  intro a ha
+  exact le_trans (hlower a ha) (hle a ha)
+
+/-- Regional bottom nonnegativity over a two-region cover assembles the global
+all-scale bottom row. -/
+theorem nonnegativeBottom_of_scaleCover
+    {Scale : Type u} {bottom : Scale → ℝ}
+    (cover : ScaleCover Scale)
+    (hSmall : BottomNonnegativeOn bottom cover.small)
+    (hLarge : BottomNonnegativeOn bottom cover.large) :
+    NonnegativeBottom bottom := by
+  intro a
+  rcases cover.cover a with hsmall | hlarge
+  · exact hSmall a hsmall
+  · exact hLarge a hlarge
+
 /-- One-way Lean-facing proof data for the Yoshida/Suzuki odd-function route.
 
 Supplying this structure for a concrete zeta Weil-form family is the analytic
@@ -70,6 +123,47 @@ theorem rh_of_nonnegativeOddBottom
     RiemannHypothesis :=
   D.riemannHypothesis_of_nonnegativeOddBottom hodd
 
+/-- Odd-bottom nonnegativity restricted to a region of scales. -/
+def OddBottomNonnegativeOn (D : DirectOddSufficientData.{u})
+    (region : D.Scale → Prop) : Prop :=
+  BottomNonnegativeOn D.oddBottom region
+
+/-- A regional comparison from a full bottom to the direct odd-sector bottom. -/
+def FullBottomLeOddOn (D : DirectOddSufficientData.{u})
+    (fullBottom : D.Scale → ℝ) (region : D.Scale → Prop) : Prop :=
+  BottomLeOn fullBottom D.oddBottom region
+
+/-- A small-scale full-bottom positivity theorem can discharge the direct
+odd-sector small row once the full-to-odd min-max comparison is supplied. -/
+theorem oddBottomNonnegativeOn_of_fullBottom
+    (D : DirectOddSufficientData.{u}) {fullBottom : D.Scale → ℝ}
+    {region : D.Scale → Prop}
+    (hfull : BottomNonnegativeOn fullBottom region)
+    (hle : FullBottomLeOddOn D fullBottom region) :
+    OddBottomNonnegativeOn D region :=
+  bottomNonnegativeOn_of_leOn hfull hle
+
+/-- Regional direct odd-bottom nonnegativity over a two-region cover assembles the
+global odd-bottom row. -/
+theorem nonnegativeOddBottom_of_scaleCover
+    (D : DirectOddSufficientData.{u})
+    (cover : ScaleCover D.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    NonnegativeOddBottom D :=
+  nonnegativeBottom_of_scaleCover cover hSmall hLarge
+
+/-- Under one-way direct odd-sector proof data, regional odd-bottom
+nonnegativity over a small/large cover proves RH. -/
+theorem rh_of_scaleCover
+    (D : DirectOddSufficientData.{u})
+    (cover : ScaleCover D.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    RiemannHypothesis :=
+  rh_of_nonnegativeOddBottom D
+    (nonnegativeOddBottom_of_scaleCover D cover hSmall hLarge)
+
 end DirectOddSufficientData
 
 /-- A packaged RH certificate for the one-way direct odd-sector route. -/
@@ -88,6 +182,29 @@ theorem riemannHypothesis
     cert.data cert.oddBottom_nonnegative
 
 end DirectOddSufficientCertificate
+
+/-- A packaged regional RH certificate for the one-way direct odd-sector route.
+
+For the Suzuki small-`a` handoff, the small row can be supplied from the
+published small-scale positivity theorem plus a full-to-odd comparison, while
+the large row remains the open tail. -/
+structure DirectOddRegionalSufficientCertificate where
+  data : DirectOddSufficientData.{u}
+  cover : ScaleCover data.Scale
+  oddSmall_nonnegative : DirectOddSufficientData.OddBottomNonnegativeOn data cover.small
+  oddLarge_nonnegative : DirectOddSufficientData.OddBottomNonnegativeOn data cover.large
+
+namespace DirectOddRegionalSufficientCertificate
+
+/-- A packaged regional one-way direct odd-sector certificate proves mathlib's
+`RiemannHypothesis`. -/
+theorem riemannHypothesis
+    (cert : DirectOddRegionalSufficientCertificate.{u}) :
+    RiemannHypothesis :=
+  DirectOddSufficientData.rh_of_scaleCover cert.data cert.cover
+    cert.oddSmall_nonnegative cert.oddLarge_nonnegative
+
+end DirectOddRegionalSufficientCertificate
 
 /-- Direct Lean-facing proof data for the Yoshida/Suzuki odd-function route.
 
@@ -144,6 +261,47 @@ theorem nonnegativeOddBottom_of_rh
     NonnegativeOddBottom D :=
   (riemannHypothesis_iff_nonnegativeOddBottom D).1 hRH
 
+/-- Odd-bottom nonnegativity restricted to a region of scales. -/
+def OddBottomNonnegativeOn (D : DirectOddProofData.{u})
+    (region : D.Scale → Prop) : Prop :=
+  BottomNonnegativeOn D.oddBottom region
+
+/-- A regional comparison from a full bottom to the direct odd-sector bottom. -/
+def FullBottomLeOddOn (D : DirectOddProofData.{u})
+    (fullBottom : D.Scale → ℝ) (region : D.Scale → Prop) : Prop :=
+  BottomLeOn fullBottom D.oddBottom region
+
+/-- A small-scale full-bottom positivity theorem can discharge the direct
+odd-sector small row once the full-to-odd min-max comparison is supplied. -/
+theorem oddBottomNonnegativeOn_of_fullBottom
+    (D : DirectOddProofData.{u}) {fullBottom : D.Scale → ℝ}
+    {region : D.Scale → Prop}
+    (hfull : BottomNonnegativeOn fullBottom region)
+    (hle : FullBottomLeOddOn D fullBottom region) :
+    OddBottomNonnegativeOn D region :=
+  bottomNonnegativeOn_of_leOn hfull hle
+
+/-- Regional direct odd-bottom nonnegativity over a two-region cover assembles the
+global odd-bottom row. -/
+theorem nonnegativeOddBottom_of_scaleCover
+    (D : DirectOddProofData.{u})
+    (cover : ScaleCover D.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    NonnegativeOddBottom D :=
+  nonnegativeBottom_of_scaleCover cover hSmall hLarge
+
+/-- Under direct odd-sector proof data, regional odd-bottom nonnegativity over a
+small/large cover proves RH. -/
+theorem rh_of_scaleCover
+    (D : DirectOddProofData.{u})
+    (cover : ScaleCover D.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    RiemannHypothesis :=
+  rh_of_nonnegativeOddBottom D
+    (nonnegativeOddBottom_of_scaleCover D cover hSmall hLarge)
+
 end DirectOddProofData
 
 /-- A packaged RH certificate for the direct odd-sector route. -/
@@ -162,6 +320,25 @@ theorem riemannHypothesis
     cert.data cert.oddBottom_nonnegative
 
 end DirectOddRHCertificate
+
+/-- A packaged regional RH certificate for the two-way direct odd-sector route. -/
+structure DirectOddRegionalRHCertificate where
+  data : DirectOddProofData.{u}
+  cover : ScaleCover data.Scale
+  oddSmall_nonnegative : DirectOddProofData.OddBottomNonnegativeOn data cover.small
+  oddLarge_nonnegative : DirectOddProofData.OddBottomNonnegativeOn data cover.large
+
+namespace DirectOddRegionalRHCertificate
+
+/-- A packaged regional direct odd-sector certificate proves mathlib's
+`RiemannHypothesis`. -/
+theorem riemannHypothesis
+    (cert : DirectOddRegionalRHCertificate.{u}) :
+    RiemannHypothesis :=
+  DirectOddProofData.rh_of_scaleCover cert.data cert.cover
+    cert.oddSmall_nonnegative cert.oddLarge_nonnegative
+
+end DirectOddRegionalRHCertificate
 
 /-- A negative direct odd-sector bottom at one scale is a packaged falsifier
 for the same supplied direct odd-sector proof data. -/
@@ -217,6 +394,55 @@ theorem riemannHypothesis_of_nonnegativeOddBottom
     RiemannHypothesis :=
   (riemannHypothesis_iff_nonnegativeOddBottom D).2 hodd
 
+namespace ProofData
+
+/-- The remaining odd-bottom row restricted to a region of scales. -/
+def OddBottomNonnegativeOn (D : ProofData.{u})
+    (region : D.criterion.Scale → Prop) : Prop :=
+  BottomNonnegativeOn D.oddCalibration.oddBottom region
+
+/-- A regional comparison from a full bottom to the calibrated odd-sector bottom. -/
+def FullBottomLeOddOn (D : ProofData.{u})
+    (fullBottom : D.criterion.Scale → ℝ)
+    (region : D.criterion.Scale → Prop) : Prop :=
+  BottomLeOn fullBottom D.oddCalibration.oddBottom region
+
+/-- A small-scale full-bottom positivity theorem can discharge the calibrated
+odd-sector small row once the full-to-odd min-max comparison is supplied. -/
+theorem oddBottomNonnegativeOn_of_fullBottom
+    (D : ProofData.{u}) {fullBottom : D.criterion.Scale → ℝ}
+    {region : D.criterion.Scale → Prop}
+    (hfull : BottomNonnegativeOn fullBottom region)
+    (hle : FullBottomLeOddOn D fullBottom region) :
+    OddBottomNonnegativeOn D region :=
+  bottomNonnegativeOn_of_leOn hfull hle
+
+/-- Regional calibrated odd-bottom nonnegativity over a two-region cover
+assembles the global odd-bottom row. -/
+theorem nonnegativeOddBottom_of_scaleCover
+    (D : ProofData.{u})
+    (cover : ScaleCover D.criterion.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    NonnegativeOddBottom D := by
+  intro a
+  rcases cover.cover a with hsmall | hlarge
+  · exact hSmall a hsmall
+  · exact hLarge a hlarge
+
+/-- Under packaged odd-sector Morse proof data, regional odd-bottom
+nonnegativity over a small/large cover proves RH. -/
+theorem riemannHypothesis_of_scaleCover
+    (D : ProofData.{u})
+    (cover : ScaleCover D.criterion.Scale)
+    (hSmall : OddBottomNonnegativeOn D cover.small)
+    (hLarge : OddBottomNonnegativeOn D cover.large) :
+    RiemannHypothesis :=
+  riemannHypothesis_of_nonnegativeOddBottom D
+    (nonnegativeOddBottom_of_scaleCover D cover hSmall hLarge)
+
+end ProofData
+
 /-- A packaged RH certificate for the odd-sector Morse route.  The field
 `oddBottom_nonnegative` is the load-bearing row; the other fields identify the
 criterion and calibrations it belongs to. -/
@@ -234,6 +460,29 @@ theorem riemannHypothesis
   riemannHypothesis_of_nonnegativeOddBottom cert.data cert.oddBottom_nonnegative
 
 end RHCertificate
+
+/-- A packaged regional RH certificate for the packaged odd-sector Morse route.
+
+The even-sector protection row is already part of `data`; this certificate only
+splits the remaining odd-sector bottom row into small-scale and large-tail
+pieces. -/
+structure RegionalOddMorseCertificate where
+  data : ProofData.{u}
+  cover : ScaleCover data.criterion.Scale
+  oddSmall_nonnegative : ProofData.OddBottomNonnegativeOn data cover.small
+  oddLarge_nonnegative : ProofData.OddBottomNonnegativeOn data cover.large
+
+namespace RegionalOddMorseCertificate
+
+/-- A packaged regional odd-sector Morse certificate proves mathlib's
+`RiemannHypothesis`. -/
+theorem riemannHypothesis
+    (cert : RegionalOddMorseCertificate.{u}) :
+    RiemannHypothesis :=
+  ProofData.riemannHypothesis_of_scaleCover cert.data cert.cover
+    cert.oddSmall_nonnegative cert.oddLarge_nonnegative
+
+end RegionalOddMorseCertificate
 
 /-- A negative calibrated odd-sector bottom at one scale is a packaged falsifier
 for the same odd-sector Morse data. -/

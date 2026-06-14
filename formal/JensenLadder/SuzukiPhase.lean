@@ -79,6 +79,59 @@ noncomputable def oddProbe (V : ℂ → ℂ) (z : ℂ) : ℂ :=
 noncomputable def evenProbe (V : ℂ → ℂ) (z : ℂ) : ℂ :=
   (z - Complex.I) * V z + (z + Complex.I) * V (-z)
 
+/-- The algebraic odd-branch phase selected by a nonzero reflection scalar `c`. -/
+noncomputable def oddPhaseOfReflection (c : ℂ) : ℂ :=
+  c⁻¹
+
+/-- The algebraic even-branch phase selected by a nonzero reflection scalar `c`. -/
+noncomputable def evenPhaseOfReflection (c : ℂ) : ℂ :=
+  -c⁻¹
+
+/-- The selected odd-branch phase satisfies `phase * c = 1`. -/
+theorem oddPhaseOfReflection_mul_reflection_eq_one
+    {c : ℂ}
+    (hc : c ≠ 0) :
+    oddPhaseOfReflection c * c = 1 := by
+  simpa [oddPhaseOfReflection] using inv_mul_cancel₀ hc
+
+/-- The selected even-branch phase satisfies `phase * c = -1`. -/
+theorem evenPhaseOfReflection_mul_reflection_eq_neg_one
+    {c : ℂ}
+    (hc : c ≠ 0) :
+    evenPhaseOfReflection c * c = -1 := by
+  rw [evenPhaseOfReflection]
+  calc
+    -c⁻¹ * c = -(c⁻¹ * c) := by ring
+    _ = -1 := by rw [inv_mul_cancel₀ hc]
+
+/-- Any nonzero reflection scalar has a unique odd-branch phase. -/
+theorem phase_eq_oddPhaseOfReflection_of_phase_mul_reflection_eq_one
+    {phase c : ℂ}
+    (hc : c ≠ 0)
+    (hphase : phase * c = 1) :
+    phase = oddPhaseOfReflection c := by
+  rw [oddPhaseOfReflection]
+  calc
+    phase = phase * 1 := by ring
+    _ = phase * (c * c⁻¹) := by rw [mul_inv_cancel₀ hc]
+    _ = (phase * c) * c⁻¹ := by ring
+    _ = 1 * c⁻¹ := by rw [hphase]
+    _ = c⁻¹ := by ring
+
+/-- Any nonzero reflection scalar has a unique even-branch phase. -/
+theorem phase_eq_evenPhaseOfReflection_of_phase_mul_reflection_eq_neg_one
+    {phase c : ℂ}
+    (hc : c ≠ 0)
+    (hphase : phase * c = -1) :
+    phase = evenPhaseOfReflection c := by
+  rw [evenPhaseOfReflection]
+  calc
+    phase = phase * 1 := by ring
+    _ = phase * (c * c⁻¹) := by rw [mul_inv_cancel₀ hc]
+    _ = (phase * c) * c⁻¹ := by ring
+    _ = (-1) * c⁻¹ := by rw [hphase]
+    _ = -c⁻¹ := by ring
+
 /-- The odd parity branch: if `phase * c = 1`, the abstract Suzuki boundary
 function is odd. -/
 theorem suzukiW_odd_of_phase_mul_reflection_eq_one
@@ -89,6 +142,16 @@ theorem suzukiW_odd_of_phase_mul_reflection_eq_one
   simp [suzukiW, hphase]
   ring
 
+/-- The selected odd-branch phase makes the abstract Suzuki boundary function odd. -/
+theorem suzukiW_odd_of_oddPhaseOfReflection
+    (V : ℂ → ℂ) {c : ℂ}
+    (hc : c ≠ 0) :
+    ∀ z : ℂ,
+      suzukiW V (oddPhaseOfReflection c) c (-z) =
+        -suzukiW V (oddPhaseOfReflection c) c z :=
+  suzukiW_odd_of_phase_mul_reflection_eq_one V
+    (oddPhaseOfReflection_mul_reflection_eq_one hc)
+
 /-- The even parity branch: if `phase * c = -1`, the abstract Suzuki boundary
 function is even. -/
 theorem suzukiW_even_of_phase_mul_reflection_eq_neg_one
@@ -98,6 +161,16 @@ theorem suzukiW_even_of_phase_mul_reflection_eq_neg_one
   intro z
   simp [suzukiW, hphase]
   ring
+
+/-- The selected even-branch phase makes the abstract Suzuki boundary function even. -/
+theorem suzukiW_even_of_evenPhaseOfReflection
+    (V : ℂ → ℂ) {c : ℂ}
+    (hc : c ≠ 0) :
+    ∀ z : ℂ,
+      suzukiW V (evenPhaseOfReflection c) c (-z) =
+        suzukiW V (evenPhaseOfReflection c) c z :=
+  suzukiW_even_of_phase_mul_reflection_eq_neg_one V
+    (evenPhaseOfReflection_mul_reflection_eq_neg_one hc)
 
 /-- Raw odd branch after a supplied deficiency reflection. -/
 theorem rawSuzukiW_odd_of_phase_mul_reflection_eq_one
@@ -110,6 +183,17 @@ theorem rawSuzukiW_odd_of_phase_mul_reflection_eq_one
   rw [rawSuzukiW_eq_suzukiW_of_deficiencyReflection Vplus Vminus hreflect]
   exact suzukiW_odd_of_phase_mul_reflection_eq_one Vplus hphase z
 
+/-- Raw odd branch for the selected reflection phase. -/
+theorem rawSuzukiW_odd_of_oddPhaseOfReflection
+    (Vplus Vminus : ℂ → ℂ) {c : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : c ≠ 0) :
+    ∀ z : ℂ,
+      rawSuzukiW Vplus Vminus (oddPhaseOfReflection c) (-z) =
+        -rawSuzukiW Vplus Vminus (oddPhaseOfReflection c) z :=
+  rawSuzukiW_odd_of_phase_mul_reflection_eq_one Vplus Vminus hreflect
+    (oddPhaseOfReflection_mul_reflection_eq_one hc)
+
 /-- Raw even branch after a supplied deficiency reflection. -/
 theorem rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one
     (Vplus Vminus : ℂ → ℂ) {phase c : ℂ}
@@ -120,6 +204,17 @@ theorem rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one
   rw [rawSuzukiW_eq_suzukiW_of_deficiencyReflection Vplus Vminus hreflect]
   rw [rawSuzukiW_eq_suzukiW_of_deficiencyReflection Vplus Vminus hreflect]
   exact suzukiW_even_of_phase_mul_reflection_eq_neg_one Vplus hphase z
+
+/-- Raw even branch for the selected reflection phase. -/
+theorem rawSuzukiW_even_of_evenPhaseOfReflection
+    (Vplus Vminus : ℂ → ℂ) {c : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : c ≠ 0) :
+    ∀ z : ℂ,
+      rawSuzukiW Vplus Vminus (evenPhaseOfReflection c) (-z) =
+        rawSuzukiW Vplus Vminus (evenPhaseOfReflection c) z :=
+  rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one Vplus Vminus hreflect
+    (evenPhaseOfReflection_mul_reflection_eq_neg_one hc)
 
 /-- Under a nonzero odd probe at `z`, oddness at `z` forces
 `phase * c = 1`. -/
@@ -179,6 +274,17 @@ theorem suzukiW_odd_at_iff_phase_mul_reflection_eq_one
   · intro hphase
     exact suzukiW_odd_of_phase_mul_reflection_eq_one V hphase z
 
+/-- Under a nonzero odd probe and nonzero reflection scalar, oddness at `z`
+forces the selected odd-branch phase. -/
+theorem phase_eq_oddPhaseOfReflection_of_suzukiW_odd_at
+    (V : ℂ → ℂ) {phase c z : ℂ}
+    (hc : c ≠ 0)
+    (hodd : suzukiW V phase c (-z) = -suzukiW V phase c z)
+    (hprobe : oddProbe V z ≠ 0) :
+    phase = oddPhaseOfReflection c :=
+  phase_eq_oddPhaseOfReflection_of_phase_mul_reflection_eq_one hc
+    (phase_mul_reflection_eq_one_of_suzukiW_odd_at V hodd hprobe)
+
 /-- Even branch uniqueness under a nonzero even probe. -/
 theorem suzukiW_even_at_iff_phase_mul_reflection_eq_neg_one
     (V : ℂ → ℂ) {phase c z : ℂ}
@@ -189,6 +295,17 @@ theorem suzukiW_even_at_iff_phase_mul_reflection_eq_neg_one
     exact phase_mul_reflection_eq_neg_one_of_suzukiW_even_at V heven hprobe
   · intro hphase
     exact suzukiW_even_of_phase_mul_reflection_eq_neg_one V hphase z
+
+/-- Under a nonzero even probe and nonzero reflection scalar, evenness at `z`
+forces the selected even-branch phase. -/
+theorem phase_eq_evenPhaseOfReflection_of_suzukiW_even_at
+    (V : ℂ → ℂ) {phase c z : ℂ}
+    (hc : c ≠ 0)
+    (heven : suzukiW V phase c (-z) = suzukiW V phase c z)
+    (hprobe : evenProbe V z ≠ 0) :
+    phase = evenPhaseOfReflection c :=
+  phase_eq_evenPhaseOfReflection_of_phase_mul_reflection_eq_neg_one hc
+    (phase_mul_reflection_eq_neg_one_of_suzukiW_even_at V heven hprobe)
 
 /-- Under a supplied deficiency reflection and nonzero odd probe at `z`, raw
 oddness at `z` forces `phase * c = 1`. -/
@@ -231,6 +348,18 @@ theorem rawSuzukiW_odd_at_iff_phase_mul_reflection_eq_one
   · intro hphase
     exact rawSuzukiW_odd_of_phase_mul_reflection_eq_one Vplus Vminus hreflect hphase z
 
+/-- Raw oddness at a nonzero probe forces the selected odd-branch phase. -/
+theorem phase_eq_oddPhaseOfReflection_of_rawSuzukiW_odd_at
+    (Vplus Vminus : ℂ → ℂ) {phase c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : c ≠ 0)
+    (hodd : rawSuzukiW Vplus Vminus phase (-z) = -rawSuzukiW Vplus Vminus phase z)
+    (hprobe : oddProbe Vplus z ≠ 0) :
+    phase = oddPhaseOfReflection c :=
+  phase_eq_oddPhaseOfReflection_of_phase_mul_reflection_eq_one hc
+    (phase_mul_reflection_eq_one_of_rawSuzukiW_odd_at
+      Vplus Vminus hreflect hodd hprobe)
+
 /-- Raw even branch uniqueness under a supplied deficiency reflection and
 nonzero even probe. -/
 theorem rawSuzukiW_even_at_iff_phase_mul_reflection_eq_neg_one
@@ -243,6 +372,18 @@ theorem rawSuzukiW_even_at_iff_phase_mul_reflection_eq_neg_one
     exact phase_mul_reflection_eq_neg_one_of_rawSuzukiW_even_at Vplus Vminus hreflect heven hprobe
   · intro hphase
     exact rawSuzukiW_even_of_phase_mul_reflection_eq_neg_one Vplus Vminus hreflect hphase z
+
+/-- Raw evenness at a nonzero probe forces the selected even-branch phase. -/
+theorem phase_eq_evenPhaseOfReflection_of_rawSuzukiW_even_at
+    (Vplus Vminus : ℂ → ℂ) {phase c z : ℂ}
+    (hreflect : DeficiencyReflection Vplus Vminus c)
+    (hc : c ≠ 0)
+    (heven : rawSuzukiW Vplus Vminus phase (-z) = rawSuzukiW Vplus Vminus phase z)
+    (hprobe : evenProbe Vplus z ≠ 0) :
+    phase = evenPhaseOfReflection c :=
+  phase_eq_evenPhaseOfReflection_of_phase_mul_reflection_eq_neg_one hc
+    (phase_mul_reflection_eq_neg_one_of_rawSuzukiW_even_at
+      Vplus Vminus hreflect heven hprobe)
 
 /-- A complex-valued function is even when it is invariant under `z ↦ -z`. -/
 def EvenFunction (F : ℂ → ℂ) : Prop :=
