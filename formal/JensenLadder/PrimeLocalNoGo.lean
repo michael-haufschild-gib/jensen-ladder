@@ -133,3 +133,156 @@ theorem one_add_oneSidedPrimeKernel_pos {r psi : ℝ}
 
 end PrimeLocalNoGo
 end JensenLadder
+
+namespace JensenLadder
+namespace PrimeLocalNoGo
+
+/-- The local diagonal threshold forced by the deleted prime kernel at `cos psi = 0`. -/
+noncomputable def localDiagonalThreshold (r : ℝ) : ℝ :=
+  (2 * r ^ 2) / (1 + r ^ 2)
+
+/-- The forced local diagonal threshold is positive for `0 < r`. -/
+theorem localDiagonalThreshold_pos {r : ℝ}
+    (hr0 : 0 < r) :
+    0 < localDiagonalThreshold r := by
+  unfold localDiagonalThreshold
+  have hnum : 0 < 2 * r ^ 2 := by nlinarith
+  have hden : 0 < 1 + r ^ 2 := by nlinarith [sq_nonneg r]
+  exact div_pos hnum hden
+
+/-- At a zero of cosine, any smaller diagonal still leaves the deleted kernel negative. -/
+theorem diagonal_add_oneSidedPrimeKernel_neg_of_delta_lt_threshold_of_cos_eq_zero
+    {r psi delta : ℝ}
+    (hcos : Real.cos psi = 0)
+    (hdelta : delta < localDiagonalThreshold r) :
+    delta + oneSidedPrimeKernel r psi < 0 := by
+  unfold localDiagonalThreshold at hdelta
+  rw [oneSidedPrimeKernel_eq_neg_two_mul_sq_div_of_cos_eq_zero hcos]
+  have heq : delta + -(2 * r ^ 2) / (1 + r ^ 2)
+      = delta - (2 * r ^ 2) / (1 + r ^ 2) := by ring
+  rw [heq]
+  exact sub_neg.mpr hdelta
+
+/-- The same lower-bound obstruction at `psi = pi/2`. -/
+theorem diagonal_add_oneSidedPrimeKernel_neg_of_delta_lt_threshold_at_pi_div_two
+    {r delta : ℝ}
+    (hdelta : delta < localDiagonalThreshold r) :
+    delta + oneSidedPrimeKernel r (Real.pi / 2) < 0 := by
+  exact diagonal_add_oneSidedPrimeKernel_neg_of_delta_lt_threshold_of_cos_eq_zero
+    (r := r) (psi := Real.pi / 2) (delta := delta)
+    (by simp) hdelta
+
+/-- A diagonal below the threshold cannot make the deleted kernel nonnegative everywhere. -/
+theorem not_forall_nonnegative_diagonal_add_oneSidedPrimeKernel_of_delta_lt_threshold
+    {r delta : ℝ}
+    (hdelta : delta < localDiagonalThreshold r) :
+    ¬ (∀ psi : ℝ, 0 <= delta + oneSidedPrimeKernel r psi) := by
+  intro hnonneg
+  have hneg := diagonal_add_oneSidedPrimeKernel_neg_of_delta_lt_threshold_at_pi_div_two
+    (r := r) (delta := delta) hdelta
+  have hnon := hnonneg (Real.pi / 2)
+  linarith
+
+end PrimeLocalNoGo
+end JensenLadder
+
+namespace JensenLadder
+namespace PrimeLocalNoGo
+
+/-- The exact uniform local diagonal threshold for the deleted prime kernel. -/
+noncomputable def uniformLocalDiagonalThreshold (r : ℝ) : ℝ :=
+  (2 * r) / (1 + r)
+
+/-- The uniform local threshold is positive in the prime range. -/
+theorem uniformLocalDiagonalThreshold_pos {r : ℝ}
+    (hr0 : 0 < r) :
+    0 < uniformLocalDiagonalThreshold r := by
+  unfold uniformLocalDiagonalThreshold
+  have hnum : 0 < 2 * r := by nlinarith
+  have hden : 0 < 1 + r := by nlinarith
+  exact div_pos hnum hden
+
+/-- The uniform local threshold is smaller than the full missing diagonal `1`. -/
+theorem uniformLocalDiagonalThreshold_lt_one {r : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1) :
+    uniformLocalDiagonalThreshold r < 1 := by
+  unfold uniformLocalDiagonalThreshold
+  have hden : 0 < 1 + r := by nlinarith
+  rw [div_lt_one hden]
+  nlinarith
+
+/-- Adding the uniform threshold makes the deleted one-prime kernel nonnegative at every phase. -/
+theorem uniformLocalDiagonalThreshold_add_oneSidedPrimeKernel_nonnegative
+    {r psi : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1) :
+    0 <= uniformLocalDiagonalThreshold r + oneSidedPrimeKernel r psi := by
+  have hdenpos : 0 < primeDenom r psi := primeDenom_pos hr0 hr1
+  have hdenne : primeDenom r psi ≠ 0 := ne_of_gt hdenpos
+  have h1pos : 0 < 1 + r := by nlinarith
+  have h1ne : 1 + r ≠ 0 := ne_of_gt h1pos
+  have hcos : -1 <= Real.cos psi := Real.neg_one_le_cos psi
+  have hnum : 0 <= 2 * r * ((1 - r) * (1 + Real.cos psi)) := by
+    have h2r : 0 <= 2 * r := by nlinarith
+    have h1r : 0 <= 1 - r := by nlinarith
+    have h1c : 0 <= 1 + Real.cos psi := by linarith
+    positivity
+  have hdenprod : 0 < (1 + r) * primeDenom r psi := mul_pos h1pos hdenpos
+  have hfrac : 0 <= (2 * r * ((1 - r) * (1 + Real.cos psi))) /
+      ((1 + r) * primeDenom r psi) := div_nonneg hnum (le_of_lt hdenprod)
+  have heq : uniformLocalDiagonalThreshold r + oneSidedPrimeKernel r psi =
+      (2 * r * ((1 - r) * (1 + Real.cos psi))) /
+        ((1 + r) * primeDenom r psi) := by
+    unfold uniformLocalDiagonalThreshold oneSidedPrimeKernel
+    field_simp [h1ne, hdenne]
+    unfold primeDenom
+    ring
+  rw [heq]
+  exact hfrac
+
+/-- At `psi = pi`, the deleted kernel reaches the negative of the uniform threshold. -/
+theorem oneSidedPrimeKernel_eq_neg_uniformLocalDiagonalThreshold_at_pi
+    {r : ℝ}
+    (hr0 : 0 < r) :
+    oneSidedPrimeKernel r Real.pi = - uniformLocalDiagonalThreshold r := by
+  have h1ne : 1 + r ≠ 0 := by nlinarith
+  have hsqne : (1 + r) ^ 2 ≠ 0 := pow_ne_zero 2 h1ne
+  unfold oneSidedPrimeKernel primeDenom uniformLocalDiagonalThreshold
+  rw [Real.cos_pi]
+  have hdeneq : 1 - 2 * r * -1 + r ^ 2 = (1 + r) ^ 2 := by ring
+  rw [hdeneq]
+  field_simp [h1ne, hsqne]
+  ring
+
+/-- The exact uniform local diagonal criterion for the deleted one-prime kernel. -/
+theorem forall_nonnegative_diagonal_add_oneSidedPrimeKernel_iff_uniformThreshold_le_delta
+    {r delta : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1) :
+    (∀ psi : ℝ, 0 <= delta + oneSidedPrimeKernel r psi) ↔
+      uniformLocalDiagonalThreshold r <= delta := by
+  constructor
+  · intro hnon
+    have hpi := hnon Real.pi
+    rw [oneSidedPrimeKernel_eq_neg_uniformLocalDiagonalThreshold_at_pi (r := r) hr0] at hpi
+    linarith
+  · intro hdelta psi
+    have hbase := uniformLocalDiagonalThreshold_add_oneSidedPrimeKernel_nonnegative
+      (r := r) (psi := psi) hr0 hr1
+    linarith
+
+/-- Any diagonal below the exact uniform threshold fails at some phase. -/
+theorem not_forall_nonnegative_diagonal_add_oneSidedPrimeKernel_of_delta_lt_uniformThreshold
+    {r delta : ℝ}
+    (hr0 : 0 < r)
+    (hr1 : r < 1)
+    (hdelta : delta < uniformLocalDiagonalThreshold r) :
+    ¬ (∀ psi : ℝ, 0 <= delta + oneSidedPrimeKernel r psi) := by
+  intro hnon
+  have hle := (forall_nonnegative_diagonal_add_oneSidedPrimeKernel_iff_uniformThreshold_le_delta
+    (r := r) (delta := delta) hr0 hr1).1 hnon
+  linarith
+
+end PrimeLocalNoGo
+end JensenLadder

@@ -1,4 +1,5 @@
 import Mathlib
+import JensenLadder.RHReduction
 open Complex Metric Filter Topology
 
 namespace JensenLadder.HurwitzBridge
@@ -344,5 +345,61 @@ lemma xi_pole_cancel (s : ℂ) (h0 : s ≠ 0) (h1 : s ≠ 1) :
   have h1' : (1 : ℂ) - s ≠ 0 := fun h => h1 (sub_eq_zero.mp h).symm
   field_simp
   ring
+
+
+
+lemma completedRiemannZeta_one_ne_zero : completedRiemannZeta 1 ≠ 0 := by
+  rw [completedRiemannZeta_one]
+  have h4pi : (0:ℝ) ≤ 4 * Real.pi := by positivity
+  have hcast : (4 * (Real.pi : ℂ)) = ((4 * Real.pi : ℝ) : ℂ) := by push_cast; ring
+  rw [hcast, ← Complex.ofReal_log h4pi, ← Complex.ofReal_sub]
+  have he : ((Real.eulerMascheroniConstant - Real.log (4 * Real.pi) : ℝ) : ℂ) / 2
+       = (((Real.eulerMascheroniConstant - Real.log (4 * Real.pi)) / 2 : ℝ) : ℂ) := by push_cast; ring
+  rw [he, Complex.ofReal_ne_zero]
+  have hγ : Real.eulerMascheroniConstant < 2 / 3 := Real.eulerMascheroniConstant_lt_two_thirds
+  have hlog : (1 : ℝ) < Real.log (4 * Real.pi) := by
+    rw [Real.lt_log_iff_exp_lt (by positivity)]
+    have h1 : Real.exp 1 < 2.7182818286 := Real.exp_one_lt_d9
+    have h2 : (3 : ℝ) < 4 * Real.pi := by nlinarith [Real.pi_gt_three]
+    linarith
+  intro h; have : Real.eulerMascheroniConstant = Real.log (4 * Real.pi) := by linarith
+  linarith
+
+lemma completedRiemannZeta_zero_ne_zero : completedRiemannZeta 0 ≠ 0 := by
+  have h := completedRiemannZeta_one_sub 1
+  rw [show (1:ℂ) - 1 = 0 by ring] at h
+  rw [h]; exact completedRiemannZeta_one_ne_zero
+
+lemma riemannXi_zero_imp_xiEntire_zero (z : ℂ)
+    (hz : completedRiemannZeta (1/2 + I * z) = 0) : xiEntire z = 0 := by
+  set s := (1/2 + I * z : ℂ) with hs
+  have hs0 : s ≠ 0 := fun h => completedRiemannZeta_zero_ne_zero (h ▸ hz)
+  have hs1 : s ≠ 1 := fun h => completedRiemannZeta_one_ne_zero (h ▸ hz)
+  have hpc := xi_pole_cancel s hs0 hs1
+  unfold xiEntire
+  rw [← hs, hpc.symm, hz]; ring
+
+lemma xiEntire_ne_zero : ∃ z, xiEntire z ≠ 0 := by
+  refine ⟨I / 2, ?_⟩
+  have hfac : (1 / 2 + I * (I / 2) : ℂ) = 0 := by
+    rw [show I * (I / 2) = (I * I) / 2 from by ring, Complex.I_mul_I]; ring
+  unfold xiEntire
+  simp only [hfac, zero_sub, zero_mul, zero_add, mul_one]
+  norm_num
+
+theorem riemannHypothesis_of_realRooted_tendsto_xiEntire
+    (F : ℕ → ℂ → ℂ)
+    (hFa : ∀ n, AnalyticOnNhd ℂ (F n) Set.univ)
+    (hF_real : ∀ n z, F n z = 0 → z.im = 0)
+    (hconv : TendstoLocallyUniformlyOn F xiEntire atTop Set.univ) :
+    RiemannHypothesis := by
+  have hga : AnalyticOnNhd ℂ xiEntire Set.univ :=
+    (xiEntire_differentiable.differentiableOn).analyticOnNhd isOpen_univ
+  have hXireal : ∀ z, xiEntire z = 0 → z.im = 0 :=
+    hurwitz_realRooted_transfer hFa hF_real hga hconv xiEntire_ne_zero
+  apply JensenLadder.RHReduction.riemannHypothesis_of_riemannXi_zeros_real
+  intro z hz
+  exact hXireal z (riemannXi_zero_imp_xiEntire_zero z hz)
+
 
 end JensenLadder.HurwitzBridge

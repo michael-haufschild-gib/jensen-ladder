@@ -40,6 +40,7 @@ import JensenLadder.MorseCriterion
 import JensenLadder.BochnerTopRoute
 import JensenLadder.MorseDeningerBridge
 import JensenLadder.CVSSpectralRoute
+import JensenLadder.DerivativeBasepointConvergence
 import JensenLadder.DeterminantHurwitzRoute
 import JensenLadder.HurwitzRealRootedLimit
 import JensenLadder.CCMGroundStateRoute
@@ -58,6 +59,7 @@ import JensenLadder.BAH1PrimeRow
 import JensenLadder.DHMultiplicityFakeGate
 import JensenLadder.FiniteMultiplicityVisibilityNoGo
 import JensenLadder.FiniteEulerProductMixedLogGate
+import JensenLadder.FiniteMixedLogVisibilityNoGo
 import JensenLadder.E1K
 import JensenLadder.LogTransfer
 import JensenLadder.CauchyTransfer
