@@ -1,3 +1,12 @@
 .lake/
 *.olean
 .DS_Store
+
+# LaTeX build cruft (keep .tex and .pdf)
+*.aux
+*.log
+*.out
+*.xdv
+*.toc
+*.fls
+*.fdb_latexmk

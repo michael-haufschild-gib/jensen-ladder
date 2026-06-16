@@ -1,0 +1,630 @@
+% ============================================================
+% A Machine-Checked Atlas of Riemann-Hypothesis Equivalences
+% and No-Go Certificates
+%
+% Formal-methods preprint draft v1 — 2026-06-16.
+% Companion artifact: the Lean 4 library `jensen-ladder/formal/`
+% (128 source modules, axiom-clean, zero sorries).
+% Title/author block are placeholders pending M. Haufschild's decision.
+% Compile: pdflatex (no external .bib; thebibliography inline).
+% NOTE (pre-submission): bibliographic specifics marked %TODO need a
+% final external verification pass; see comments at \thebibliography.
+% ============================================================
+\documentclass[11pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{seqsplit} % allow long Lean identifiers to break across lines
+\usepackage[hidelinks]{hyperref}
+\raggedbottom
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Xifn}{\Xi}
+\newcommand{\Gammar}{\Gamma_{\!\R}}
+\newcommand{\code}[1]{\texttt{\seqsplit{#1}}}
+\let\Re\relax % override LaTeX's built-in \Re (fraktur) so we can use "Re"
+\DeclareMathOperator{\Re}{Re}
+\DeclareMathOperator{\Spec}{Spec}
+
+\begin{document}
+% Many long Lean identifiers appear inline; allow looser spacing so \texttt
+% runs do not overrun the margin.
+\sloppy
+
+\title[A machine-checked atlas of RH equivalences and no-go certificates]{A
+machine-checked atlas of Riemann-Hypothesis equivalences and no-go
+certificates}
+
+% AUTHORSHIP NOTE (to be settled by M.~Haufschild before submission):
+% author list, affiliation, and the framing of the AI contribution are the
+% repository owner's call. The Lean development was produced by AI research
+% agents ("Fable" = Claude, and GPT) under the author's direction, with the
+% Lean kernel as final referee.
+\author{Michael Haufschild}
+\email{haufschildmichael@gmail.com}
+
+\date{June 16, 2026}
+
+\begin{abstract}
+We describe \code{jensen-ladder}, a Lean~4 library that formalizes, against
+\code{mathlib}, the \emph{logical geometry} of the Riemann Hypothesis (RH):
+the network of equivalent reformulations and the structural obstructions that
+any proof must respect. The library contains $128$ source modules; the full
+\code{lake build} is green ($8588$ compiled jobs); the tree contains no
+\code{sorry} and no added \code{axiom}, and the headline results depend only on
+the three standard \code{mathlib} axioms \code{[propext, Classical.choice,
+Quot.sound]}. Three things are mechanized. First, a short, unconditional
+\emph{reduction spine} that proves \code{mathlib}'s official
+\code{RiemannHypothesis} equivalent to the reality of the \emph{regular} zeros
+of the completed zeta function in a symmetric variable, with the
+Gamma-factor exceptional set and the pole handled exactly, and the functional
+equation realized as a reflection symmetry. Second, an \emph{equivalence
+lattice}: RH is proved equivalent --- in the kernel, axiom-clean --- to the
+existence of any one of a family of abstract \emph{faithful carriers}
+(Hodge-index, arithmetic-site, geometric-square-root, Deninger-dictionary,
+moment-problem, spectral-realization, Morse-index-zero, Fredholm-squared, \dots),
+each an interface that records \emph{what kind of object a proof must supply},
+and each shipped with its own \emph{falsifier} (a single off-line zero refutes
+it) and with \emph{non-supply} lemmas certifying that naive (finite, diagnostic,
+fake) candidates do not instantiate it. Third, a suite of finite, fully proved
+\emph{no-go certificates} that rule out entire classes of naive strategy ---
+the Davenport--Heilbronn fake-family obstruction, the finite-carrier
+obstruction, the failure of one-sided prime-local positivity, the
+multiplicativity-visibility obstructions, a scattering-parity obstruction, and
+the no-margin / resolution-wall obstruction. The novel contribution is not a
+new theorem about $\zeta$: it is the machine-checking itself. The
+RH ``wall'' --- known informally as a scattering of equivalences and folklore
+obstructions --- becomes one axiom-clean, mutually consistent, kernel-enforced
+formal artifact. \textbf{The library does not prove RH, and does not claim to:}
+every load-bearing carrier hypothesis is left unproven, several are proved
+\emph{equivalent} to RH, and the genuinely open input is named explicitly.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}\label{sec:intro}
+
+\subsection*{What is formalized, and what is not}
+The Riemann Hypothesis asserts that the nontrivial zeros of the Riemann zeta
+function lie on the line $\Re s = \tfrac12$. In \code{mathlib} it is the
+proposition
+\begin{center}
+\code{RiemannHypothesis : $\forall$ s, riemannZeta s = 0 $\to$
+($\lnot\exists$ n, s = -2*(n+1)) $\to$ s $\ne$ 1 $\to$ s.re = 1/2.}
+\end{center}
+This paper is \emph{not} a proof of RH. It is a description of a Lean~4 library
+that formalizes the \emph{structure} of the problem: the equivalent forms RH can
+take, and the obstructions that constrain any proof. We call this structure the
+\emph{logical geometry of the wall}. Informally this geometry is well known ---
+RH has dozens of published equivalent reformulations
+\cite{broughan,conrey,bombieri}, and the function-field analogue (Weil, Deligne)
+makes the shape of a hypothetical proof a recurring subject of speculation
+\cite{weil,connes}. What has \emph{not} existed is a single machine-checked
+artifact in which these reformulations are stated precisely against a common
+formal kernel, proved equivalent to one another, and confronted with the
+obstructions in the same logical universe. That artifact is the contribution
+here.
+
+\subsection*{Three layers}
+The library, \code{jensen-ladder}, has three layers.
+
+\begin{enumerate}
+\item \textbf{The reduction spine} (\S\ref{sec:spine}). A handful of
+unconditional, axiom-clean theorems carry \code{mathlib}'s
+\code{RiemannHypothesis} to a clean working endpoint: the reality of the
+\emph{regular} zeros of the completed zeta function $\Lambda$ written in the
+symmetric variable $\Xifn(z)=\Lambda(\tfrac12 + iz)$. The functional equation
+becomes evenness of $\Xifn$; the trivial-zero / Gamma-factor exceptional set and
+the pole at $s=1$ are filtered exactly.
+
+\item \textbf{The equivalence lattice} (\S\ref{sec:lattice}). RH is proved
+equivalent, in the kernel, to the existence of any one of a family of abstract
+\emph{faithful carriers}. Each carrier is a Lean \code{structure} whose
+``faithful rows'' would suffice to prove RH (\code{riemannHypothesis\_of\_%
+faithfulRows}); each ships with a falsifier (\code{not\_faithfulRows\_of\_%
+nonrealRegularXiZero}); the carriers are proved mutually equivalent, forming a
+lattice whose top is RH.
+
+\item \textbf{The no-go certificates} (\S\ref{sec:nogo}). Finite, fully proved
+theorems that exclude naive proof strategies: that a single Euler-product
+coefficient law is the only separator (the Davenport--Heilbronn fake gate),
+that no finite spectrum can host infinitely many zeros, that one-sided
+prime-local positivity fails, that finite ``visibility'' cannot force
+multiplicativity, that a scattering ratio cannot equal $\Xifn$, and that no
+margin/floor mechanism survives (the resolution wall).
+\end{enumerate}
+
+\subsection*{The point of mechanizing this}
+A skeptic may object that an equivalence ``RH $\iff$ (an object exists that
+would prove RH)'' is logically shallow. The objection is partly correct and we
+take it seriously throughout (\S\ref{sec:honest}). The value of the
+mechanization is fourfold and is \emph{not} mathematical depth of any single
+equivalence:
+\begin{itemize}
+\item \emph{Faithful bookkeeping.} The reduction targets are stated as precise
+Lean types, not prose. ``What object would suffice'' becomes a checkable
+\code{structure}; ``what is still open'' becomes a named, unproven hypothesis of
+known status.
+\item \emph{Kernel-enforced consistency.} The carriers are proved
+\emph{equivalent to one another}, so the routes cannot secretly disagree about
+what RH needs; the falsifier direction is uniform across all of them; the no-gos
+compose with the lattice in the same logical universe.
+\item \emph{The no-gos are genuine theorems.} Unlike the equivalences, the
+no-go certificates are finite, self-contained, unconditional results --- a
+machine-checked census of what cannot work.
+\item \emph{Honest separation.} The library distinguishes, at the type level,
+proved analytic content about $\zeta$ from abstract interfaces that merely
+\emph{record} an open problem. Every module that consumes an unconstructed
+object says so in its doc-string.
+\end{itemize}
+
+\subsection*{Relation to Theorem M}
+A separate, self-contained result --- ``Theorem M'', the unconditional
+hyperbolicity of the critical Laguerre family $\Psi_d$ \cite{theoremM} --- is a
+proved \emph{input} to one route of the lattice (the model-to-$\Xifn$ transfer).
+We emphasize, as that work does and as every relevant module here repeats:
+\textbf{Theorem M is proven, but Theorem M does not prove RH by itself.} The
+present library makes precise exactly which additional, unproven input would be
+required.
+
+\subsection*{Verification at a glance}
+The toolchain is pinned (\code{leanprover/lean4:v4.30.0}, \code{mathlib}
+\code{v4.30.0}). The complete check is
+\begin{center}
+\code{cd formal \&\& lake build}\qquad(green, $128$ modules, $8588$ jobs)
+\end{center}
+followed by \code{scripts/check\_axioms.sh}, which prints the axiom dependency of
+a curated set of $16$ headline theorems spanning all three layers and confirms
+each is exactly \code{[propext, Classical.choice, Quot.sound]} with zero
+\code{sorry}s (\S\ref{sec:repro}).
+
+\section{The reduction spine}\label{sec:spine}
+
+The endpoint of the analytic program is most naturally stated about the
+\emph{completed} zeta function $\Lambda=\code{completedRiemannZeta}$ and its
+symmetric variable. Module \code{RHReduction} formalizes the bridge from
+\code{mathlib}'s \code{RiemannHypothesis} to that endpoint, unconditionally.
+
+\subsection*{The Gamma-factor bookkeeping}
+\code{mathlib} provides $\zeta(s)=\Lambda(s)/\Gammar(s)$ for $s\neq 0$, where
+$\Gammar(s)=\pi^{-s/2}\Gamma(s/2)$ vanishes exactly on $\{0,-2,-4,\dots\}$.
+These are precisely the points excluded from the RH quantifier (the trivial
+zeros, together with $s=0$, where $\zeta(0)=-\tfrac12\neq 0$). Hence at every
+point in scope of the RH quantifier $\Gammar(s)\neq0$, so a zero of $\zeta$
+there is a zero of $\Lambda$. Define a \emph{regular} zero to be one with
+$\Gammar(s)\neq0$ and $s\neq1$. The module proves both directions and packages
+them as an equivalence.
+
+\begin{theorem}[\code{riemannHypothesis\_iff\_completedZeta\_regular\_zeros\_on\_line}]
+\code{RiemannHypothesis} holds if and only if every regular zero $s$ of
+$\Lambda$ has $\Re s=\tfrac12$.
+\end{theorem}
+
+\subsection*{The symmetric variable and the functional equation}
+Set $\Xifn(z)=\Lambda(\tfrac12+iz)$ (\code{riemannXi}). The change of variables
+$s=\tfrac12+iz$ sends $\Re s=\tfrac12$ to $\Im z=0$, and a regular zero of
+$\Lambda$ to a \emph{regular $\Xifn$-zero} (\code{riemannXiRegularZero}: the
+$\Xifn$-zero condition together with the two regularity filters). The functional
+equation $\Lambda(1-s)=\Lambda(s)$ becomes the evenness of $\Xifn$.
+
+\begin{theorem}[\code{riemannXi\_even}, \code{riemannXiRegularZero\_neg}]
+$\Xifn(-z)=\Xifn(z)$ for all $z\in\C$, and the regular-zero predicate is
+invariant under $z\mapsto -z$. The fixed-point set of this reflection is the
+real axis $\Im z=0$, i.e.\ the critical line.
+\end{theorem}
+
+\noindent The second statement uses one nontrivial \code{mathlib} input
+(nonvanishing of $\zeta$ on $\Re s\ge 1$) to keep the regularity filters
+symmetric; it is the formal heart of ``functional equation $=$ reflection about
+the critical line''. Composing the change of variables with the Gamma-factor
+bridge yields the spine's headline equivalence.
+
+\begin{theorem}[\code{riemannHypothesis\_iff\_regular\_riemannXi\_zeros\_real}]
+\label{thm:spine}
+\code{RiemannHypothesis} $\iff$ every regular $\Xifn$-zero is real
+($\Im z=0$).
+\end{theorem}
+
+All of \S\ref{sec:spine} is unconditional and axiom-clean. It is the one place
+in the library where ``RH'' is connected to a tractable analytic object; every
+later layer targets the right-hand side of Theorem~\ref{thm:spine}.
+
+\section{The equivalence lattice}\label{sec:lattice}
+
+\subsection*{The carrier pattern}
+Each route is organized around an abstract \code{structure} --- a
+\emph{carrier} --- whose fields are the rows a proof along that route would have
+to supply. The carrier is deliberately abstract: it does \emph{not} construct
+the geometric or spectral object, only names the properties that object must
+have. Every carrier module instantiates the same three-part pattern:
+\begin{enumerate}
+\item \textbf{sufficiency:} \code{riemannHypothesis\_of\_faithfulRows} --- the
+faithful rows imply RH (via Theorem~\ref{thm:spine});
+\item \textbf{falsifier:} \code{not\_faithfulRows\_of\_nonrealRegularXiZero} ---
+a single off-line regular $\Xifn$-zero refutes the rows;
+\item \textbf{non-supply:} lemmas of the form \code{X\_do\_not\_supply\_Y}
+exhibiting an explicit \emph{diagnostic} carrier (e.g.\ empty spectrum, fake
+coefficient stream) that satisfies the cheap rows but provably not the faithful
+ones.
+\end{enumerate}
+The non-supply lemmas are what keep the pattern honest: they certify that the
+carrier's faithful row is not vacuously satisfiable, so the equivalence does not
+collapse to a triviality at the cheap end.
+
+\subsection*{The lattice}
+The carriers are then linked by kernel-checked \code{iff}s into a single lattice
+whose top element is RH. Representative equivalences (all axiom-clean):
+\[
+\begin{aligned}
+\text{RH}
+&\iff \exists\ \text{a faithful Hodge-index carrier}\\
+&\iff \exists\ \text{a faithful arithmetic-site carrier}\\
+&\iff \exists\ \text{a faithful geometric-square-root carrier}\\
+&\iff \exists\ \text{a faithful Fredholm-squared carrier}\\
+&\iff \exists\ \text{a regular spectral realization}\\
+&\iff \text{no negative Morse modes (Morse index $0$)},
+\end{aligned}
+\]
+with the corresponding module and theorem names collected in
+Table~\ref{tab:lattice}.
+The intermediate equivalences are proved \emph{directly between carriers}
+(e.g.\ \code{hasFaithfulHodgeIndexCarrier\_iff\_hasFaithfulArithmeticSiteCarrier},
+\code{hasFaithfulGeometricSquareRootCarrier\_iff\_hasFaithfulHodgeIndexCarrier}),
+so the lattice is internally consistent: every route agrees, in the kernel, on
+what object RH requires. Table~\ref{tab:lattice} lists the carrier modules.
+
+\begin{table}[t]
+\scriptsize
+\centering
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Module & Carrier / equivalence (open content $=$ existence of the faithful rows)\\
+\midrule
+\code{HodgeIndexCarrier} & RH $\iff$ faithful Hodge-index carrier $\iff$ arithmetic-site carrier \\
+\code{ArithmeticSiteCarrier} & RH $\iff$ faithful arithmetic-site carrier (Lefschetz/Weil-trace rows) \\
+\code{GeometricSquareRootCarrier} & nonnegative Weil form $\iff$ abstract square root; $\iff$ Hodge-index carrier \\
+\code{HodgeWeilBridge} & finite Hodge realization $\Rightarrow$ Weil form PSD; negative vector $\Rightarrow$ no realization \\
+\code{PrimitiveHodgeWeilEngine/Calibration} & primitive Hodge--Riemann engine for finite Weil forms \\
+\code{DeningerCarrier} & RH $\iff$ polarized faithful dictionary (flow / determinant interface) \\
+\code{DeningerFlowUnitary}, \code{FriedDeningerTorsionCarrier} & flow-unitarity / torsion variants of the Deninger dictionary \\
+\code{MomentProblemCarrier} & RH $\iff$ faithful moment-problem carrier $\iff$ spectral realization \\
+\code{SpectralRealization} & RH $\iff$ $\exists$ (regular) spectral realization of the $\Xifn$-zeros \\
+\code{SpectralReflection} & RH $\iff$ $\exists$ reflected (FE-symmetric) regular spectral realization \\
+\code{ComplexSpectralDeterminantCarrier}, \code{UnitaryCokernelCarrier} & complex-determinant / unitary-cokernel realizations \\
+\code{FredholmSquaredCarrier} & RH $\iff$ faithful Fredholm-squared carrier $\iff$ nonnegative squared support \\
+\code{SquaredVariablePullback} & reality from nonnegative squared support / approximation \\
+\code{PrimeCepstrumHankelCarrier} & prime-cepstrum Hankel realization (feeds Fredholm-squared) \\
+\code{MorseCriterion} & RH $\iff$ no negative modes $\iff$ nonnegative spectral bottom \\
+\code{MorseDeningerBridge} & no negative modes $\iff$ polarized faithful dictionary $\iff$ RH \\
+\code{BochnerTopRoute} & RH $\iff$ nonpositive ``top'' (Bochner simple-top calibration) \\
+\code{MagicInterpolationBridge} & magic-interpolation data $\Rightarrow$ RH; off-line zero $\Rightarrow$ no magic rows (sufficiency $+$ falsifier; Viazovska-style target) \\
+\code{ModelToXiTransfer}, \code{PolyaSchurTransfer} & model endpoint (Theorem M) $+$ transfer row $+$ Jensen gate $\Rightarrow$ RH \\
+\code{TruncationLimitCarrier}, \code{SpectralPollutionFreeLimit} & exhaustive / pollution-free limit carriers \\
+\code{CVSSpectralRoute} (+\,\code{CVS*}, \code{CCMGroundState*}, \code{OddMorseCertificate}) & Connes--van Suijlekom finite-scale ground states $+$ convergence $\Rightarrow$ RH \\
+\code{DeterminantHurwitzRoute}, \code{SquaredDeterminant*}, \code{DiagonalFredholmProduct} & \code{det\_reg}$\to\Xifn$ squared-determinant route \\
+\bottomrule
+\end{tabular}
+\caption{The equivalence lattice. In every row the \emph{open content} is the
+existence of the faithful rows; the equivalence and the falsifier are
+proved.}\label{tab:lattice}
+\end{table}
+
+\subsection*{A worked carrier: the finite Hodge-to-Weil bridge}
+To show the pattern carries genuine finite content (not only abstract
+plumbing), consider \code{HodgeWeilBridge}. For a finite semilocal Weil matrix
+$D$ (archimedean part minus prime/local part) it defines the quadratic form
+$Q_D(v)=\sum_{i,j} v_i\,(\code{entry}\,D\,i\,j)\,v_j$ and proves the exact split
+\[
+Q_D(v) \;=\; Q_D^{\mathrm{arch}}(v) \;-\; \sum_{q} Q_D^{\mathrm{prime},q}(v)
+\]
+(\code{quadraticForm\_eq\_arch\_sub\_sum\_localPrimeQuadraticForm}). It then
+defines an abstract \code{FiniteHodgeRealization} --- a map from finite
+vectors to a \code{DivisorClass} with an intersection form, an abstract
+\code{primitive} predicate, the Hodge-index row (primitive self-intersections
+$\le 0$), and the identification $Q_D(v)=-\langle\text{realize }v,
+\text{realize }v\rangle$ --- and proves that any such realization makes $Q_D$
+positive semidefinite, while a single negative vector rules out every
+realization. The doc-string states the boundary precisely: ``This file does not
+construct the arithmetic surface, divisor classes, intersection theory, trace
+identity, semilocal Connes operator, convergence theorem, or RH. It only records
+the finite algebraic bridge that such a construction must instantiate.'' That is
+the honest shape of the whole lattice: real finite algebra, an explicitly
+abstract geometric interface, and a named open problem.
+
+\section{The no-go certificates}\label{sec:nogo}
+
+The second class of results is mathematically self-contained: finite,
+unconditional theorems that rule out naive strategy classes. These are the
+machine-checked ``wall''. Table~\ref{tab:nogo} lists them; we expand the two
+most structurally important.
+
+\subsection*{Multiplicativity is the only separator (Davenport--Heilbronn)}
+A recurring failure mode is any argument that uses only the functional equation,
+reality, and density/coefficient information --- because the
+Davenport--Heilbronn function has all of those and yet has zeros off the
+critical line. Module \code{DHMultiplicityFakeGate} formalizes the finite
+arithmetic core that distinguishes $\zeta$ from such fakes: a single normalized
+Euler-product coefficient stream must be (coprime) multiplicative, and the
+Davenport--Heilbronn residue pattern already violates this at the coprime pair
+$(2,3)$.
+
+\begin{theorem}[\code{not\_coprimeMultiplicative\_of\_DHPattern236}]
+If $a(1)=1$, $a(2)=\kappa$, $a(3)=-\kappa$, $a(6)=1$, then $a$ is not coprime
+multiplicative --- multiplicativity would force $a(6)=a(2)a(3)=-\kappa^2\neq1$.
+\end{theorem}
+
+\noindent The companion modules \code{FiniteMultiplicityVisibilityNoGo},
+\code{FiniteMixedLogVisibilityNoGo}, \code{FiniteEulerProductMixedLogGate}
+sharpen this into a \emph{visibility} statement: a finite ``visible predicate''
+(any finite window of coefficient data) cannot force coprime multiplicativity,
+because a product-spike pattern agrees with the unit stream on the window yet
+violates the law off it. This is the formal version of ``the Euler product is
+the unique separator, and no finite amount of it suffices''.
+
+\subsection*{No margin (the resolution wall)}
+RH sits at an \emph{exact} threshold: empirically the minimal normalized
+zero-gap tends to $0$ (the Lehmer phenomenon), so no proof can rely on a uniform
+positive margin/floor. Module \code{ResolutionWall} (with \code{BAH1Quadratic})
+formalizes the contradiction.
+
+\begin{theorem}[\code{not\_forall\_certificate\_margin\_of\_uniform\_floor\_arbitrarily\_small\_margins}]
+If certificate margins are bounded below by a fixed positive floor, but the
+required margins are arbitrarily small, no certificate can meet the margin at
+every index --- a contradiction. Hence a margin/floor mechanism cannot certify
+the critical (marginless) inequality.
+\end{theorem}
+
+\noindent This is the formal counterpart of the analytic ``no-floor'' fact and
+explains, inside the kernel, why soft-margin and single-positive-functional
+methods are excluded. \code{CVSKatoSmallNoGo} reaches the same conclusion on the
+spectral side: Kato-smallness fails precisely when the spectral gap collapses.
+
+\begin{table}[t]
+\scriptsize
+\centering
+\begin{tabular}{@{}p{0.42\textwidth}p{0.52\textwidth}@{}}
+\toprule
+Module & What is proved (finite, unconditional)\\
+\midrule
+\code{DHMultiplicityFakeGate} & the Davenport--Heilbronn pattern is not (coprime/totally) multiplicative \\
+\code{FiniteMultiplicityVisibilityNoGo} & a finite visible predicate cannot force coprime multiplicativity \\
+\code{FiniteMixedLogVisibilityNoGo}, \code{FiniteEulerProductMixedLogGate} & finite mixed-log data cannot force the product (Euler-coupling) relations \\
+\code{FiniteCarrierNoGo} & a finite spectrum cannot represent infinitely many distinct zeros \\
+\code{PrimeLocalNoGo} & one-sided prime-local kernel is negative below threshold $\Rightarrow$ local positivity fails \\
+\code{PrimeLocalHodgeNoGo} & one-sided prime-local data admits a negative Hodge vector \\
+\code{ScatteringParityNoGo} & a scattering ratio (even log-derivative) cannot equal $\Xifn$ (odd) --- closes the ratio class \\
+\code{ResolutionWall}, \code{BAH1Quadratic} & uniform floor $+$ arbitrarily small margins $\Rightarrow$ contradiction (no margin) \\
+\code{CVSKatoSmallNoGo} & Kato-smallness fails under critical gap collapse \\
+\code{AdversarialSignTwistNoGo} & an adversarial sign-twist forces a negative direction unless budget $\le$ archimedean \\
+\code{AbsoluteBudgetFakeFamilyBlindness} & absolute-budget certificates are blind to sign-retwisted fake families \\
+\code{DeterminantNormalizationNoGo} & post-hoc scalar normalization cannot repair \code{det\_reg} \\
+\code{SpectralFaithfulnessGap} & an off-axis regular zero $\Rightarrow$ the squared spectrum is not faithful \\
+\code{SchurStarSharpness} & archimedean $<$ response budget $\Rightarrow$ an explicit negative form (sharpness) \\
+\bottomrule
+\end{tabular}
+\caption{The no-go certificates: a machine-checked census of strategies that
+cannot work.}\label{tab:nogo}
+\end{table}
+
+\section{Finite positivity algebra and unconditional analytic bricks}
+\label{sec:bricks}
+
+Two further families of modules carry genuine mathematical content below the
+abstract interfaces.
+
+\subsection*{Finite positivity algebra}
+A toolkit of finite linear algebra realizes the ``square-root/domination''
+mechanics the positivity routes need: \code{HodgeSignatureBabyCarrier},
+\code{PrimeDominationBabyCarrier}, \code{GraphLaplacianBabyCarrier},
+\code{RowDiagonalDominationCarrier}, \code{GlobalDominationReduction},
+\code{SchurStarDominationCarrier}/\code{AssemblyCarrier}, and the finite-rank
+\code{CCM*} algebra (\code{CCMFiniteWeil}, \code{CCMRankOne}, \code{CCMQuotient},
+\code{CCMFrobeniusBound}, \code{CCMPerturbationBound}, \code{CCMFiniteKatoBridge}).
+These prove, e.g., that an off-diagonal coupling dominated by the diagonal makes
+a completed block positive semidefinite, and that a rooted incidence assembly's
+energy is an exact square. The \code{Chiral*} modules formalize a finite
+chiral-Dirac perfect-square route (PSD Hankel moments, Stieltjes trace
+identities) with explicit ``diagnostic rows do not supply live rows'' honesty
+lemmas.
+
+\subsection*{Unconditional analytic bricks}
+Several modules prove substantive, RH-independent facts about the completed zeta
+function, some filling gaps not in \code{mathlib}:
+\begin{itemize}
+\item \code{RvMXiEntire} --- the entire completion $\code{xiE}(s)=\tfrac12\,
+(s(s-1)\,\code{completedRiemannZeta}_0(s)+1)$ is entire, with nonnegative
+divisor, and $\code{xiE}(s)=0 \iff \zeta(s)=0$ on the critical strip
+(\code{xiE\_zero\_iff\_zeta\_zero}); the Riemann--von Mangoldt foundation.
+\item \code{ZeroCountingN} --- the zero-counting function $N(T)$ as a finite,
+monotone count.
+\item \code{XiOrderBound}, \code{XiZeroCounting}, \code{W1DensityNevanlinna},
+\code{CompletedZetaStripBound} --- order-$1$ growth bounds, a Jensen
+zero-counting bound, vertical-strip bounds, and the Nevanlinna bricks toward
+$\sum_\rho 1/(\tfrac14+\gamma^2)<\infty$.
+\item \code{HurwitzRealRootedLimit} --- a \emph{from-scratch} Lean
+formalization of the argument principle (zeros-in-a-contour) and the
+nowhere-zero Hurwitz theorem, neither in \code{mathlib}, giving the headline
+analytic reduction \code{det\_reg}$\to\Xifn\Rightarrow$RH used by the
+squared-determinant route.
+\end{itemize}
+These are the genuinely deep unconditional content of the library and are of
+independent formalization interest.
+
+\section{Methodology and discipline}\label{sec:method}
+
+\subsection*{Axiom hygiene}
+The headline theorems of all three layers depend on exactly the three standard
+\code{mathlib} axioms \code{[propext, Classical.choice, Quot.sound]}; the tree
+contains no \code{sorry} and no added \code{axiom}. The script
+\code{scripts/check\_axioms.sh} re-derives this for a curated set of $16$
+headline names (Appendix~\ref{sec:repro}); it is wrap-tolerant (Lean line-wraps
+long axiom lists) and fails loudly on any extra axiom, missing name, or
+\code{sorry} token.
+
+\subsection*{The falsifier discipline}
+Every carrier ships with a falsifier: a single nonreal regular $\Xifn$-zero
+refutes its faithful rows. This is not decoration --- it forces each interface
+to be \emph{about} the zeros (an interface satisfiable independently of the zero
+locations would have no falsifier), and it makes the lattice a genuine
+reduction rather than a relabeling.
+
+\subsection*{Abstract-interface honesty}
+Where a module consumes an unconstructed object, its doc-string says so, and a
+non-supply lemma exhibits a concrete cheap carrier that fails the faithful rows.
+The library never imports an object it has not built; the open input is always a
+named, unproven hypothesis.
+
+\subsection*{Production process}
+The development was produced by AI research agents (Claude ``Fable'' and GPT)
+under the author's direction, in a disjoint-file-ownership mutual-audit
+protocol, with the Lean kernel as final referee --- the same process used for
+Theorem M \cite{theoremM}.
+
+\section{Honest scope and limitations}\label{sec:honest}
+
+We state the limitations plainly, because they determine what the artifact is
+worth.
+\begin{enumerate}
+\item \textbf{It is not a proof of RH}, and contains none. Every carrier's
+faithful rows are left unproven; no module instantiates a faithful carrier.
+\item \textbf{The carrier equivalences are, by design, logically shallow.} A
+carrier is essentially ``an object whose existence would prove RH and which a
+single off-line zero refutes''; proving RH $\iff$ (such an object exists) is not
+a deep theorem about $\zeta$. Their worth is bookkeeping, mutual consistency,
+falsifier-faithfulness, and the non-supply lemmas --- not depth. We do not claim
+otherwise.
+\item \textbf{The genuinely substantive content is elsewhere:} the no-go
+certificates (\S\ref{sec:nogo}), the from-scratch argument-principle/Hurwitz
+analysis and the Riemann--von Mangoldt bricks (\S\ref{sec:bricks}), and the
+reduction spine (\S\ref{sec:spine}).
+\item \textbf{The single open input,} reached independently by the geometric,
+spectral, moment, and Morse routes, is one object: a non-spectral geometric
+carrier (an arithmetic $\Spec\Z\times_{\mathbb F_1}\Spec\Z$ / Deninger dynamical
+cohomology / Connes--Consani arithmetic site) delivering a Hodge-index-positive
+intersection form, equivalently a faithful zero dictionary. The library names
+this object and its falsifier; it does not construct it. Constructing it is the
+open problem.
+\end{enumerate}
+
+\section{Reproducibility}\label{sec:repro}
+
+\subsection*{Build}
+\begin{verbatim}
+cd formal && lake build      # green: 128 modules, 8588 jobs
+\end{verbatim}
+Toolchain: \code{leanprover/lean4:v4.30.0}; \code{mathlib} pinned at
+\code{v4.30.0} (see \code{lake-manifest.json}).
+
+\subsection*{Axiom + sorry audit}
+\begin{verbatim}
+scripts/check_axioms.sh
+  -> 16 headline theorems axiom-clean
+     ([propext, Classical.choice, Quot.sound]), zero sorries.
+\end{verbatim}
+The audited headline names include the spine
+(\code{riemannHypothesis\_iff\_regular\_riemannXi\_zeros\_real},
+\code{riemannXi\_even}, \code{riemannXiRegularZero\_neg}), the lattice
+(\code{hasFaithfulHodgeIndexCarrier\_iff\_riemannHypothesis} and its
+carrier-to-carrier links, \code{FredholmSquaredCarrier},
+\code{SpectralRealization}), the no-gos
+(\code{not\_coprimeMultiplicative\_of\_DHPattern236},
+\code{ScatteringParityNoGo}, \code{PrimeLocalNoGo}, \code{ResolutionWall}), and
+an analytic brick (\code{xiE\_zero\_iff\_zeta\_zero}).
+
+\subsection*{Sorry sweep}
+\begin{verbatim}
+# no real sorry/admit tokens anywhere in the tree:
+rg -n '(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' \
+   formal/JensenLadder
+\end{verbatim}
+
+\section{Conclusion}\label{sec:concl}
+
+The Riemann Hypothesis has long had a rich informal ``geometry'': a web of
+equivalent reformulations and a folklore of obstructions explaining why the
+easy routes fail. \code{jensen-ladder} turns that geometry into a single
+machine-checked object. The reformulations become a kernel-enforced equivalence
+lattice; the obstructions become finite, unconditional no-go certificates; the
+boundary between proved analytic content and abstract reduction target is made
+explicit at the type level; and the one open input is named, not hidden. None of
+this proves RH --- and the library is scrupulous never to suggest it does. What
+it offers is a faithful, axiom-clean map of where the problem actually sits, of
+a kind that, to our knowledge, has not previously been mechanized.
+
+\subsection*{Acknowledgments}
+% TODO (Michael): authorship/credit framing is yours to settle.
+The library and its formal verification were developed by AI research agents,
+Claude (``Fable'', Anthropic) and GPT (OpenAI), under the author's direction,
+with mutual line-audits and the Lean kernel as referee.
+
+% ============================================================
+% TODO (pre-submission): verify all bibliographic specifics below against
+% primary sources (years, editions, page ranges). Entries are standard and
+% recalled, not re-checked in the drafting session.
+% ============================================================
+\begin{thebibliography}{99}
+
+\bibitem{lean4}
+L.~de~Moura and S.~Ullrich,
+\emph{The Lean 4 theorem prover and programming language},
+in: Automated Deduction --- CADE 28, LNCS \textbf{12699}, Springer, 2021,
+625--635.
+
+\bibitem{mathlib}
+The mathlib Community,
+\emph{The Lean mathematical library},
+in: Proc.\ 9th ACM SIGPLAN Int.\ Conf.\ on Certified Programs and Proofs
+(CPP 2020), ACM, 2020, 367--381.
+
+\bibitem{theoremM}
+M.~Haufschild,
+\emph{Unconditional hyperbolicity of the critical Laguerre family: an
+elementary and formally verified proof}, preprint, 2026.
+% companion repository: theorem-m
+
+\bibitem{broughan}
+K.~Broughan,
+\emph{Equivalents of the Riemann Hypothesis}, Vols.\ I--II,
+Encyclopedia of Mathematics and its Applications, Cambridge Univ.\ Press, 2017.
+
+\bibitem{conrey}
+J.~B. Conrey,
+\emph{The Riemann Hypothesis},
+Notices Amer.\ Math.\ Soc.\ \textbf{50} (2003), no.\ 3, 341--353.
+
+\bibitem{bombieri}
+E.~Bombieri,
+\emph{Problems of the Millennium: The Riemann Hypothesis},
+Clay Mathematics Institute, 2000.
+
+\bibitem{weil}
+A.~Weil,
+\emph{Sur les courbes alg\'ebriques et les vari\'et\'es qui s'en d\'eduisent},
+Hermann, Paris, 1948.
+
+\bibitem{connes}
+A.~Connes,
+\emph{Trace formula in noncommutative geometry and the zeros of the Riemann
+zeta function}, Selecta Math.\ (N.S.) \textbf{5} (1999), 29--106.
+
+\end{thebibliography}
+
+\end{document}

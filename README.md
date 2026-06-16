@@ -13,9 +13,9 @@ along several routes, each carrying its own falsifier.
 
 ## What is formally established
 
-Full `lake build` is green (81 modules); no `sorry`/`admit`; no added `axiom`
-declarations. Within that kernel-checked discipline the repository proves
-**reductions**, not RH:
+Full `lake build` is green (128 modules, 8588 jobs); no `sorry`/`admit`; no
+added `axiom` declarations. Within that kernel-checked discipline the repository
+proves **reductions**, not RH:
 
 - **`HurwitzRealRootedLimit`** — the headline reduction **`det_reg → Ξ ⟹ RH`**,
   axiom-clean (`[propext, Classical.choice, Quot.sound]`): if entire, only-real-zero
@@ -67,13 +67,25 @@ is the geometric carrier, exactly as in Weil's function-field proof (Hodge
 index on `C×C`). That carrier is unconstructed; building it is the open
 problem.
 
+## Paper
+
+A formal-methods preprint describing this library as a machine-checked atlas of
+RH equivalences and no-go certificates is in
+[`docs/preprint/main.tex`](docs/preprint/main.tex); a full module inventory
+mapping every module to its role is in
+[`docs/MODULE_INVENTORY.md`](docs/MODULE_INVENTORY.md).
+
 ## Verification
 
 ```sh
-cd formal && lake build                          # green, 81 modules (8557 jobs)
-# confirm axiom profile (expect: [propext, Classical.choice, Quot.sound]):
-#   echo 'import JensenLadder' > /tmp/ax.lean ; ...; #print axioms <endpoint>
+cd formal && lake build                          # green, 128 modules (8588 jobs)
+../scripts/check_axioms.sh                        # 16 headline theorems axiom-clean, 0 sorries
 rg -n '(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' formal/JensenLadder   # none
 ```
+
+`scripts/check_axioms.sh` prints the axiom dependency of a curated set of
+headline theorems spanning all three layers (the reduction spine, the carrier
+equivalence lattice, and the no-go certificates) and confirms each is exactly
+`[propext, Classical.choice, Quot.sound]`.
 
 License: MIT.
