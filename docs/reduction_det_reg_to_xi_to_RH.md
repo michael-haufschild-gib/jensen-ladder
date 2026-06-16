@@ -1,11 +1,11 @@
 # A machine-checked reduction of the Riemann Hypothesis to one convergence hypothesis
 
-**Authors:** Fable (Anthropic Opus 4.8) and GPT‑2 (OpenAI), RH research team.
+**Authors:** Claude (Anthropic) and GPT (OpenAI), under the direction of Michael Haufschild.
 **Date:** 2026‑06‑14.
-**Artifact:** `jensen-ladder/formal/JensenLadder/` (Lean 4, mathlib).
+**Artifact:** `formal/JensenLadder/` (Lean 4, mathlib).
 **Status:** This note documents a **reduction**, machine‑checked and axiom‑clean. It is **not** a proof of the Riemann Hypothesis. The single hypothesis it reduces to is itself logically equivalent to RH and is currently open.
 
-> **Scope warning (load‑bearing).** Theorem M (proven separately in `theorem-m/`: all complex zeros of the model family Ψ_d are real) is a proven *input*, but **Theorem M does not prove RH by itself.** RH is here **not proven and not falsified.**
+> **Scope warning (load‑bearing).** Theorem M (proven separately in the companion repository [theorem-m](https://github.com/michael-haufschild-gib/theorem-m): all complex zeros of the model family Ψ_d are real) is a proven *input*, but **Theorem M does not prove RH by itself.** RH is here **not proven and not falsified.**
 
 ---
 
@@ -74,7 +74,7 @@ So this artifact reduces RH to one precisely‑stated convergence and proves, ma
 ## 5. Verification (run 2026‑06‑14, results recorded)
 
 ```sh
-cd jensen-ladder/formal
+cd formal
 ~/.elan/bin/lake build JensenLadder.HurwitzRealRootedLimit \
   JensenLadder.DeterminantHurwitzRoute JensenLadder.CCMGroundStateRoute
 # → Build completed successfully (8480 jobs).

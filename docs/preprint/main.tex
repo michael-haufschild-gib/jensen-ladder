@@ -66,7 +66,7 @@ We describe \code{jensen-ladder}, a Lean~4 library that formalizes, against
 \code{mathlib}, the \emph{logical geometry} of the Riemann Hypothesis (RH):
 the network of equivalent reformulations and the structural obstructions that
 any proof must respect. The library contains $128$ source modules; the full
-\code{lake build} is green ($8602$ compiled jobs); the tree contains no
+\code{lake build} is green ($8603$ compiled jobs); the tree contains no
 \code{sorry} and no added \code{axiom}, and the headline results depend only on
 the three standard \code{mathlib} axioms \code{[propext, Classical.choice,
 Quot.sound]}. Three things are mechanized. First, a short, unconditional
@@ -187,7 +187,7 @@ required.
 The toolchain is pinned (\code{leanprover/lean4:v4.30.0}, \code{mathlib}
 \code{v4.30.0}). The complete check is
 \begin{center}
-\code{cd formal \&\& lake build}\qquad(green, $128$ modules, $8602$ jobs)
+\code{cd formal \&\& lake build}\qquad(green, $128$ modules, $8603$ jobs)
 \end{center}
 followed by \code{scripts/check\_axioms.sh}, which prints the axiom dependency of
 a curated set of $16$ headline theorems spanning all three layers and confirms
@@ -533,7 +533,7 @@ open problem.
 
 \subsection*{Build}
 \begin{verbatim}
-cd formal && lake build      # green: 128 modules, 8602 jobs
+cd formal && lake build      # green: 128 modules, 8603 jobs
 \end{verbatim}
 Toolchain: \code{leanprover/lean4:v4.30.0}; \code{mathlib} pinned at
 \code{v4.30.0} (see \code{lake-manifest.json}).

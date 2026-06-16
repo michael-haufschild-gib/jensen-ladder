@@ -93,9 +93,9 @@ Hodge index on `C × C`) and that the integers lack. It is unconstructed;
 building it is the open problem. This library names it and its falsifier; it
 does not build it.
 
-[Theorem M](../theorem-m) (proven separately: all zeros of an explicit Laguerre
-deformation `Ψ_d` are real) is a proven *input* to one route, but **Theorem M
-does not prove RH by itself.**
+[Theorem M](https://github.com/michael-haufschild-gib/theorem-m) (proven
+separately: all zeros of an explicit Laguerre deformation `Ψ_d` are real) is a
+proven *input* to one route, but **Theorem M does not prove RH by itself.**
 
 ## Authorship
 

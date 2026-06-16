@@ -110,3 +110,21 @@ import JensenLadder.C2PSuzukiMass
 import JensenLadder.SuzukiPhase
 import JensenLadder.C2PFullCertificate
 import JensenLadder.Sturm
+
+-- Analytic-brick / standalone modules (previously outside the import closure);
+-- imported here so a clean `lake build` verifies every source module.
+import JensenLadder.RvMXiEntire
+import JensenLadder.RvMXiLink
+import JensenLadder.ZeroCountingN
+import JensenLadder.XiOrderBound
+import JensenLadder.XiZeroCounting
+import JensenLadder.W1DensityNevanlinna
+import JensenLadder.CompletedZetaStripBound
+import JensenLadder.XiEntireEven
+import JensenLadder.CarrierCanonicalProduct
+import JensenLadder.ChiralDiracSquare
+import JensenLadder.DeterminantNormalizationNoGo
+import JensenLadder.LiCriterionDisk
+import JensenLadder.ModelTuranRatio
+import JensenLadder.SymmetryProtection
+import JensenLadder.W3InnerFactor
