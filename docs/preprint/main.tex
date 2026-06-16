@@ -2,13 +2,11 @@
 % A Machine-Checked Atlas of Riemann-Hypothesis Equivalences
 % and No-Go Certificates
 %
-% Formal-methods preprint draft v1 — 2026-06-16.
-% Companion artifact: the Lean 4 library `jensen-ladder/formal/`
+% Formal-methods preprint — 2026-06-16.
+% Companion artifact: the Lean 4 library in this repository, `formal/`
 % (128 source modules, axiom-clean, zero sorries).
-% Title/author block are placeholders pending M. Haufschild's decision.
-% Compile: pdflatex (no external .bib; thebibliography inline).
-% NOTE (pre-submission): bibliographic specifics marked %TODO need a
-% final external verification pass; see comments at \thebibliography.
+% Compile: pdflatex or tectonic (no external .bib; thebibliography inline).
+% Bibliography verified against primary sources (2026-06).
 % ============================================================
 \documentclass[11pt]{amsart}
 
@@ -68,7 +66,7 @@ We describe \code{jensen-ladder}, a Lean~4 library that formalizes, against
 \code{mathlib}, the \emph{logical geometry} of the Riemann Hypothesis (RH):
 the network of equivalent reformulations and the structural obstructions that
 any proof must respect. The library contains $128$ source modules; the full
-\code{lake build} is green ($8588$ compiled jobs); the tree contains no
+\code{lake build} is green ($8602$ compiled jobs); the tree contains no
 \code{sorry} and no added \code{axiom}, and the headline results depend only on
 the three standard \code{mathlib} axioms \code{[propext, Classical.choice,
 Quot.sound]}. Three things are mechanized. First, a short, unconditional
@@ -189,7 +187,7 @@ required.
 The toolchain is pinned (\code{leanprover/lean4:v4.30.0}, \code{mathlib}
 \code{v4.30.0}). The complete check is
 \begin{center}
-\code{cd formal \&\& lake build}\qquad(green, $128$ modules, $8588$ jobs)
+\code{cd formal \&\& lake build}\qquad(green, $128$ modules, $8602$ jobs)
 \end{center}
 followed by \code{scripts/check\_axioms.sh}, which prints the axiom dependency of
 a curated set of $16$ headline theorems spanning all three layers and confirms
@@ -477,7 +475,14 @@ contains no \code{sorry} and no added \code{axiom}. The script
 \code{scripts/check\_axioms.sh} re-derives this for a curated set of $16$
 headline names (Appendix~\ref{sec:repro}); it is wrap-tolerant (Lean line-wraps
 long axiom lists) and fails loudly on any extra axiom, missing name, or
-\code{sorry} token.
+\code{sorry} token. As an independent safeguard, the exported headline
+declarations and their full dependency closure ($54{,}693$ declarations) are
+re-checked by Nanoda,\footnote{\url{https://github.com/ammkrn/nanoda_lib}; the
+export uses \code{lean4export}, \url{https://github.com/leanprover/lean4export}.}
+an independent Rust implementation of the Lean~4 kernel, with the permitted
+axioms restricted to exactly the three above (\code{scripts/check\_nanoda.sh}).
+Continuous integration runs the full \code{lake build}, the axiom audit, and the
+Nanoda re-check on every push.
 
 \subsection*{The falsifier discipline}
 Every carrier ships with a falsifier: a single nonreal regular $\Xifn$-zero
@@ -528,7 +533,7 @@ open problem.
 
 \subsection*{Build}
 \begin{verbatim}
-cd formal && lake build      # green: 128 modules, 8588 jobs
+cd formal && lake build      # green: 128 modules, 8602 jobs
 \end{verbatim}
 Toolchain: \code{leanprover/lean4:v4.30.0}; \code{mathlib} pinned at
 \code{v4.30.0} (see \code{lake-manifest.json}).
@@ -556,6 +561,32 @@ rg -n '(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' \
    formal/JensenLadder
 \end{verbatim}
 
+\section{Related work}\label{sec:related}
+
+\emph{Formalized analytic number theory.} Substantial parts of the analytic
+theory of $\zeta$ are already formalized. In Isabelle/HOL, Eberl and Paulson
+formalized a large portion of analytic number theory --- including an analytic
+proof of the Prime Number Theorem and the Riemann/Hurwitz zeta and Dirichlet
+$L$-functions \cite{eberl}. In Lean, the \code{PrimeNumberTheoremAnd} project
+(Kontorovich, Tao, and collaborators) formalized the Prime Number Theorem with
+error term \cite{pnta}, and \code{mathlib} itself supplies the \emph{statement}
+\code{RiemannHypothesis} \cite{mathlib} that this library targets. All of these
+formalize \emph{theorems about} $\zeta$; none addresses RH's equivalent
+reformulations or the obstructions to proving it. The present work is
+complementary --- it mechanizes the \emph{logical geometry} around the open
+statement, not an analytic theorem implying it.
+
+\emph{The informal RH landscape.} RH has an extensive informal catalogue of
+equivalent reformulations --- two volumes by Broughan \cite{broughan}, Conrey's
+survey \cite{conrey}, and the official problem description \cite{bombieri} ---
+while the function-field analogue (Weil \cite{weil}, Deligne) and the
+noncommutative-geometry program (Connes \cite{connes}) supply the
+``geometric positivity'' target that the carriers of \S\ref{sec:lattice}
+abstract. To our knowledge none of this had previously been mechanized; the
+contribution here is to state these equivalences and obstructions precisely
+against one kernel, prove them mutually consistent, and pair each carrier with a
+falsifier and each obstruction with a finite certificate.
+
 \section{Conclusion}\label{sec:concl}
 
 The Riemann Hypothesis has long had a rich informal ``geometry'': a web of
@@ -570,29 +601,35 @@ it offers is a faithful, axiom-clean map of where the problem actually sits, of
 a kind that, to our knowledge, has not previously been mechanized.
 
 \subsection*{Acknowledgments}
-% TODO (Michael): authorship/credit framing is yours to settle.
 The library and its formal verification were developed by AI research agents,
 Claude (``Fable'', Anthropic) and GPT (OpenAI), under the author's direction,
 with mutual line-audits and the Lean kernel as referee.
 
-% ============================================================
-% TODO (pre-submission): verify all bibliographic specifics below against
-% primary sources (years, editions, page ranges). Entries are standard and
-% recalled, not re-checked in the drafting session.
-% ============================================================
+% Bibliography verified against primary sources (2026-06).
 \begin{thebibliography}{99}
 
 \bibitem{lean4}
 L.~de~Moura and S.~Ullrich,
 \emph{The Lean 4 theorem prover and programming language},
 in: Automated Deduction --- CADE 28, LNCS \textbf{12699}, Springer, 2021,
-625--635.
+625--635. DOI: \url{https://doi.org/10.1007/978-3-030-79876-5_37}.
 
 \bibitem{mathlib}
 The mathlib Community,
 \emph{The Lean mathematical library},
 in: Proc.\ 9th ACM SIGPLAN Int.\ Conf.\ on Certified Programs and Proofs
-(CPP 2020), ACM, 2020, 367--381.
+(CPP 2020), ACM, 2020, 367--381. DOI: \url{https://doi.org/10.1145/3372885.3373824}.
+
+\bibitem{eberl}
+M.~Eberl,
+\emph{Nine Chapters of Analytic Number Theory in Isabelle/HOL},
+in: 10th Int.\ Conf.\ on Interactive Theorem Proving (ITP 2019),
+LIPIcs \textbf{141}, Schloss Dagstuhl, 2019, Art.~16.
+
+\bibitem{pnta}
+A.~Kontorovich, T.~Tao, et al.,
+\emph{PrimeNumberTheoremAnd}, Lean~4 formalization of the Prime Number Theorem,
+2024. \url{https://github.com/AlexKontorovich/PrimeNumberTheoremAnd}.
 
 \bibitem{theoremM}
 M.~Haufschild,
@@ -602,8 +639,9 @@ elementary and formally verified proof}, preprint, 2026.
 
 \bibitem{broughan}
 K.~Broughan,
-\emph{Equivalents of the Riemann Hypothesis}, Vols.\ I--II,
-Encyclopedia of Mathematics and its Applications, Cambridge Univ.\ Press, 2017.
+\emph{Equivalents of the Riemann Hypothesis. Vol.~1: Arithmetic Equivalents;
+Vol.~2: Analytic Equivalents}, Encyclopedia of Mathematics and its
+Applications \textbf{164}--\textbf{165}, Cambridge Univ.\ Press, 2017.
 
 \bibitem{conrey}
 J.~B. Conrey,
@@ -618,12 +656,13 @@ Clay Mathematics Institute, 2000.
 \bibitem{weil}
 A.~Weil,
 \emph{Sur les courbes alg\'ebriques et les vari\'et\'es qui s'en d\'eduisent},
-Hermann, Paris, 1948.
+Actualit\'es Sci.\ Ind.\ \textbf{1041}, Hermann, Paris, 1948.
 
 \bibitem{connes}
 A.~Connes,
 \emph{Trace formula in noncommutative geometry and the zeros of the Riemann
-zeta function}, Selecta Math.\ (N.S.) \textbf{5} (1999), 29--106.
+zeta function}, Selecta Math.\ (N.S.) \textbf{5} (1999), no.\ 1, 29--106.
+DOI: \url{https://doi.org/10.1007/s000290050042}.
 
 \end{thebibliography}
 

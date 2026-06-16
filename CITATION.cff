@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this library, please cite it as below."
+title: >-
+  rh-formal-atlas: a machine-checked atlas of Riemann-Hypothesis
+  equivalences and no-go certificates
+abstract: >-
+  A Lean 4 library that formalizes, against mathlib, the logical geometry of
+  the Riemann Hypothesis: a reduction spine from mathlib's RiemannHypothesis to
+  reality of the regular zeros of the completed zeta, a kernel-checked
+  equivalence lattice of abstract faithful carriers, and a suite of finite
+  no-go certificates. It does not prove RH. Axiom-clean, zero sorries,
+  re-checked by an independent kernel (nanoda_lib).
+authors:
+  - family-names: Haufschild
+    given-names: Michael
+type: software
+repository-code: "https://github.com/michael-haufschild-gib/rh-formal-atlas"
+license: MIT
+date-released: "2026-06-16"
+version: "1.0.0"
+keywords:
+  - Riemann Hypothesis
+  - Lean 4
+  - mathlib
+  - formal verification
+  - interactive theorem proving

@@ -1,8 +1,8 @@
-# jensen-ladder — module inventory
+# rh-formal-atlas — module inventory
 
 Companion to the preprint `docs/preprint/main.tex`. Every source module of
 `formal/JensenLadder/` is listed once, under its primary role. Verified this
-pass: `lake build` green (128 source modules, 8588 jobs), zero `sorry`, no added
+pass: `lake build` green (128 source modules, 8602 jobs), zero `sorry`, no added
 `axiom`; 16 headline theorems confirmed axiom-clean
 (`[propext, Classical.choice, Quot.sound]`) by `scripts/check_axioms.sh`.
 

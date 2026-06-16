@@ -1,91 +1,115 @@
-# jensen-ladder
+# rh-formal-atlas
 
-A Lean 4 formalization of a **reduction lattice** for the Riemann Hypothesis:
-a kernel-checked web of conditional theorems that pin RH to a single,
-explicitly-stated, currently-unproven analytic input — reached independently
-along several routes, each carrying its own falsifier.
+[![build & verify](https://github.com/michael-haufschild-gib/rh-formal-atlas/actions/workflows/build.yml/badge.svg)](https://github.com/michael-haufschild-gib/rh-formal-atlas/actions/workflows/build.yml)
 
-> **Scope warning (load-bearing — do not drop).** This repository does **not**
-> prove the Riemann Hypothesis. Theorem M (proven separately, in
-> [theorem-m](../theorem-m): all complex zeros of the model family Ψ_d are
-> real) is a proven *input*, but **Theorem M does not prove RH by itself.**
-> RH is not proven and not falsified here.
+A Lean 4 library that formalizes the *logical geometry* of the Riemann
+Hypothesis (RH): the network of equivalent reformulations, and the structural
+obstructions that any proof must respect. Everything is checked against
+[mathlib](https://github.com/leanprover-community/mathlib4).
 
-## What is formally established
+> **This repository does not prove the Riemann Hypothesis, and does not claim
+> to.** It is a machine-checked *map* of the problem — what an object that
+> would prove RH must look like, and which naive strategies provably cannot
+> work. The one genuinely open input is named explicitly (below); it is not
+> constructed here. RH is neither proven nor falsified in this repository.
 
-Full `lake build` is green (128 modules, 8588 jobs); no `sorry`/`admit`; no
-added `axiom` declarations. Within that kernel-checked discipline the repository
-proves **reductions**, not RH:
+## What this is (and isn't)
 
-- **`HurwitzRealRootedLimit`** — the headline reduction **`det_reg → Ξ ⟹ RH`**,
-  axiom-clean (`[propext, Classical.choice, Quot.sound]`): if entire, only-real-zero
-  approximants `Fₙ` converge locally uniformly on ℂ to the entire `xiEntire`, then
-  `RiemannHypothesis`. Built on a *from-scratch* Lean formalization of the argument
-  principle (zeros-in-a-contour) and the nowhere-zero Hurwitz theorem — both absent
-  from mathlib. The `DeterminantHurwitzRoute` / `CCMGroundStateRoute` consumers
-  specialize it to the CCM finite-determinant family (entire + real-rooted for free
-  by self-adjointness; convergence is the only open row). See
-  [`docs/reduction_det_reg_to_xi_to_RH.md`](docs/reduction_det_reg_to_xi_to_RH.md).
-- **`RHReduction`** — RH ⟺ reality of the regular Ξ zeros (the Pólya–Jensen /
-  mathlib `RiemannHypothesis` bridge).
-- **`ModelToXiTransfer`** — RH ⟸ (a model endpoint such as Theorem M) +
-  a `FakeZeroFreeTransferRow` + the classical Jensen gate. The load-bearing
-  input is the transfer row, not the wrapper.
-- **`PolyaSchurTransfer`** — the transfer row realized as a Pólya–Schur
-  multiplier sequence (`M ∈ Laguerre–Pólya`), with the falsifier that any
-  off-`LP` Ξ kills it.
-- **`SpectralFaithfulnessGap`** — reality of a self-adjoint spectrum is free;
-  the open content is **faithfulness** (every zero represented in the
-  spectrum). An off-axis zero ⟹ not faithful.
-- **`CVSSpectralRoute`** — Connes–van Suijlekom: simple-even finite-scale
-  ground states + Hurwitz convergence ⟹ RH; convergence is the open row.
-- **`DeningerCarrier`** — the non-spectral geometric carrier interface:
-  `hasPolarizedFaithfulDictionary ⟺ RiemannHypothesis`. It names the carrier
-  and its missing-zero falsifier; it does **not** construct Deninger's
-  `H*_dyn`, a flow, a determinant identity, or a positivity theorem.
-- **`MorseDeningerBridge`** — `noNegativeModes ⟺ faithful dictionary ⟺ RH`.
-- Genuine below-RH content: `ResolutionWall`, `StructureTheorem`, `T1Phase`,
-  `T2Edge`, the `BAH1*` criticality no-go, the `CCM*` finite-rank algebra.
+RH has dozens of known equivalent reformulations and a long folklore of
+"why the easy routes fail." This library makes that informal geometry precise
+and machine-checked, in three layers:
 
-Every load-bearing hypothesis above is left **unproven** (no module
-instantiates it), and several are proven **equivalent** to RH — so none of
-them proves RH; together they form an honest map of where the single open
-input sits.
+- **A reduction spine.** A short, unconditional bridge from mathlib's official
+  `RiemannHypothesis` to a clean working endpoint — reality of the *regular*
+  zeros of the completed zeta function in a symmetric variable `Ξ`.
+- **An equivalence lattice.** RH is proved equivalent, in the kernel, to the
+  existence of any one of several abstract *faithful carriers* (a Hodge-index
+  object, an arithmetic-site object, a spectral realization, a Morse-index-zero
+  condition, …). These are honest *reduction targets*: each records what an
+  object would have to deliver, and each carries a *falsifier* (a single
+  off-line zero refutes it). They are interfaces, not constructions — the
+  library never builds the object.
+- **No-go certificates.** Finite, fully proved theorems that rule out whole
+  classes of naive strategy: that only the Euler product separates ζ from
+  fakes (the Davenport–Heilbronn obstruction), that no finite spectrum can host
+  infinitely many zeros, that one-sided prime-local positivity fails, that no
+  margin/floor mechanism survives, and more.
 
-## The single open input (honest statement)
+The value here is not depth in any single equivalence — several are shallow by
+design. It is that the whole map is *one* axiom-clean, mutually consistent,
+kernel-checked artifact, with proved analytic content (ξ entire of order 1,
+the zero-counting foundation) kept explicitly separate from abstract reduction
+targets.
 
-The routes' hypotheses are mutually related and reduce to one object: a
-**non-spectral geometric carrier** (an arithmetic `ℤ ×_{F₁} ℤ` / Deninger
-`H*_dyn` / Connes–Consani arithmetic site / Borger Λ-ring with Witt `ψ_p`
-Frobenii) delivering a Hodge-index-positive intersection form / a faithful
-zero dictionary. A recorded research synthesis (the *moment-problem
-invariant*, `../docs/rh/what_if_rabbit_holes_20260614.md`) argues why this is
-forced: "realize ζ's zeros as a spectrum/measure" is, by the Hamburger moment
-problem, identical to "a Hankel/intersection positivity," which is RH — so no
-spectral/positivity route is non-circular, and the only non-circular crossing
-is the geometric carrier, exactly as in Weil's function-field proof (Hodge
-index on `C×C`). That carrier is unconstructed; building it is the open
-problem.
+## If you came here from the paper
 
-## Paper
+| You want | Where it is |
+|---|---|
+| The paper | [`docs/preprint/main.pdf`](docs/preprint/main.pdf) (LaTeX source beside it) |
+| The headline reduction | [`formal/JensenLadder/RHReduction.lean`](formal/JensenLadder/RHReduction.lean) — `riemannHypothesis_iff_regular_riemannXi_zeros_real` |
+| The carrier equivalence lattice | `formal/JensenLadder/{HodgeIndexCarrier, ArithmeticSiteCarrier, GeometricSquareRootCarrier, SpectralRealization, MorseCriterion, FredholmSquaredCarrier, …}.lean` |
+| The no-go certificates | `formal/JensenLadder/{DHMultiplicityFakeGate, FiniteCarrierNoGo, PrimeLocalNoGo, ScatteringParityNoGo, ResolutionWall, …}.lean` |
+| The full module-by-module map | [`docs/MODULE_INVENTORY.md`](docs/MODULE_INVENTORY.md) |
+| The axiom + sorry check | [`scripts/check_axioms.sh`](scripts/check_axioms.sh) |
+| The independent kernel re-check | [`scripts/check_nanoda.sh`](scripts/check_nanoda.sh) |
 
-A formal-methods preprint describing this library as a machine-checked atlas of
-RH equivalences and no-go certificates is in
-[`docs/preprint/main.tex`](docs/preprint/main.tex); a full module inventory
-mapping every module to its role is in
-[`docs/MODULE_INVENTORY.md`](docs/MODULE_INVENTORY.md).
+In Lean, the headline statement reads:
 
-## Verification
-
-```sh
-cd formal && lake build                          # green, 128 modules (8588 jobs)
-../scripts/check_axioms.sh                        # 16 headline theorems axiom-clean, 0 sorries
-rg -n '(^|[^A-Za-z_])(sorry|admit)([^A-Za-z_]|$)' formal/JensenLadder   # none
+```lean
+theorem riemannHypothesis_iff_regular_riemannXi_zeros_real :
+    RiemannHypothesis ↔ (∀ z : ℂ, riemannXiRegularZero z → z.im = 0)
 ```
 
-`scripts/check_axioms.sh` prints the axiom dependency of a curated set of
-headline theorems spanning all three layers (the reduction spine, the carrier
-equivalence lattice, and the no-go certificates) and confirms each is exactly
-`[propext, Classical.choice, Quot.sound]`.
+The development compiles with zero `sorry`s and no added `axiom`s; the headline
+theorems depend only on the three axioms underlying all of mathlib (`propext`,
+`Classical.choice`, `Quot.sound`). The exported declarations have also been
+re-checked with [nanoda_lib](https://github.com/ammkrn/nanoda_lib), an
+independent implementation of the Lean 4 kernel, via a
+[lean4export](https://github.com/leanprover/lean4export) export. CI repeats all
+of this on every push.
 
-License: MIT.
+## Checking it yourself
+
+You need [elan](https://github.com/leanprover/elan) (the Lean toolchain
+manager); everything else is pinned by the repository. The Nanoda re-check
+additionally needs [Rust](https://www.rust-lang.org/tools/install).
+
+```sh
+cd formal
+lake exe cache get           # fetch precompiled mathlib (a few minutes, no compiling)
+lake build                   # build and kernel-check all 128 modules
+../scripts/check_axioms.sh   # print the axiom report; fails on any deviation
+../scripts/check_nanoda.sh   # re-check the export with the external kernel
+```
+
+## The one open input (honest statement)
+
+The routes' open hypotheses are mutually related and reduce to a single object:
+a **non-spectral geometric carrier** — an arithmetic `Spec ℤ ×_{F₁} Spec ℤ` /
+Deninger dynamical cohomology / Connes–Consani arithmetic site — delivering a
+Hodge-index-positive intersection form, equivalently a faithful zero
+dictionary. That is exactly the object Weil's function-field proof has (the
+Hodge index on `C × C`) and that the integers lack. It is unconstructed;
+building it is the open problem. This library names it and its falsifier; it
+does not build it.
+
+[Theorem M](../theorem-m) (proven separately: all zeros of an explicit Laguerre
+deformation `Ψ_d` are real) is a proven *input* to one route, but **Theorem M
+does not prove RH by itself.**
+
+## Authorship
+
+The library was developed by two AI research agents — Claude (Anthropic) and
+GPT (OpenAI) — under the direction of Michael Haufschild, 2026. We are aware
+that AI-produced mathematics warrants extra skepticism; that is precisely why
+everything here is machine-checked, why the kernel check is repeated with an
+independent kernel implementation, and why the boundary between what is *proved*
+and what is merely an *interface for an open problem* is made explicit in every
+module's doc-string. No claim in this repository rests on trusting the authors.
+If you find an error — in the paper, the code, or anything between — please open
+an issue.
+
+## License
+
+MIT (see `LICENSE`). Depends on
+[mathlib](https://github.com/leanprover-community/mathlib4) (Apache 2.0).
