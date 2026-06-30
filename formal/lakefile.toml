@@ -8,3 +8,6 @@ rev = "v4.30.0"
 
 [[lean_lib]]
 name = "JensenLadder"
+
+[[lean_lib]]
+name = "GaloisForLFunctions"

@@ -48,7 +48,7 @@ targets.
 | The paper | [`docs/preprint/main.pdf`](docs/preprint/main.pdf) (LaTeX source beside it) |
 | The headline reduction | [`formal/JensenLadder/RHReduction.lean`](formal/JensenLadder/RHReduction.lean) — `riemannHypothesis_iff_regular_riemannXi_zeros_real` |
 | The carrier equivalence lattice | `formal/JensenLadder/{HodgeIndexCarrier, ArithmeticSiteCarrier, GeometricSquareRootCarrier, SpectralRealization, MorseCriterion, FredholmSquaredCarrier, …}.lean` |
-| The no-go certificates | `formal/JensenLadder/{DHMultiplicityFakeGate, FiniteCarrierNoGo, PrimeLocalNoGo, ScatteringParityNoGo, ResolutionWall, …}.lean` |
+| The no-go certificates | `formal/JensenLadder/{DHMultiplicityFakeGate, FiniteCarrierNoGo, PrimeLocalNoGo, ScatteringParityNoGo, ResolutionWall, AmenabilityNoGo, ModularQuotientNoGo, PrimeQuarantineTraceNoGo, …}.lean` |
 | The full module-by-module map | [`docs/MODULE_INVENTORY.md`](docs/MODULE_INVENTORY.md) |
 | The axiom + sorry check | [`scripts/check_axioms.sh`](scripts/check_axioms.sh) |
 | The independent kernel re-check | [`scripts/check_nanoda.sh`](scripts/check_nanoda.sh) |
@@ -77,7 +77,7 @@ additionally needs [Rust](https://www.rust-lang.org/tools/install).
 ```sh
 cd formal
 lake exe cache get           # fetch precompiled mathlib (a few minutes, no compiling)
-lake build                   # build and kernel-check all 128 modules
+lake build                   # build and kernel-check all 131 modules
 ../scripts/check_axioms.sh   # print the axiom report; fails on any deviation
 ../scripts/check_nanoda.sh   # re-check the export with the external kernel
 ```

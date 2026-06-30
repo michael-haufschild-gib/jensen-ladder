@@ -35,6 +35,10 @@ HEADLINES=(
   "JensenLadder.ScatteringParityNoGo.logDeriv_eq_zero_of_scattering_eq_xi"
   "JensenLadder.PrimeLocalNoGo.not_forall_nonnegative_diagonal_add_oneSidedPrimeKernel_of_delta_lt_threshold"
   "JensenLadder.ResolutionWall.not_forall_certificate_margin_of_uniform_floor_arbitrarily_small_margins"
+  # no-go certificates: operator-algebraic / universality family
+  "JensenLadder.AmenabilityNoGo.no_eulerBlind_reality_gate"
+  "JensenLadder.ModularQuotientNoGo.modular_ab_hom_to_int_trivial"
+  "JensenLadder.PrimeQuarantineTraceNoGo.quarantine_trace_zero_of_weight_gt_one"
   # unconditional analytic bricks about the completed zeta
   "JensenLadder.RvMXiEntire.xiE_zero_iff_zeta_zero"
   # finite Hodge -> Weil positivity bridge

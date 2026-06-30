@@ -2,8 +2,8 @@
 
 Companion to the preprint `docs/preprint/main.tex`. Every source module of
 `formal/JensenLadder/` is listed once, under its primary role. Verified this
-pass: `lake build` green (128 source modules, 8603 jobs), zero `sorry`, no added
-`axiom`; 16 headline theorems confirmed axiom-clean
+pass: `lake build` green (131 source modules, 8606 jobs), zero `sorry`, no added
+`axiom`; 19 headline theorems confirmed axiom-clean
 (`[propext, Classical.choice, Quot.sound]`) by `scripts/check_axioms.sh`.
 
 Roles: **S** reduction spine · **L** equivalence-lattice carrier · **N** no-go
@@ -85,6 +85,9 @@ non-supply lemmas; carriers are linked by kernel-checked `iff`s.
 | `SpectralFaithfulnessGap` | an off-axis regular zero ⟹ the squared spectrum is not faithful |
 | `SchurStarSharpness` | arch < response budget ⟹ an explicit negative form (sharpness/falsifier) |
 | `SymmetryProtection` | the no-margin wall is symmetry-protected (RH-agnostic moment identities) |
+| `AmenabilityNoGo` | amenability is Euler-blind (a structural gate forcing reality applies verbatim to the DH fake ⟹ refuted by a DH off-line zero); no-gap ≠ no-point-spectrum (almost-Mathieu). The surviving content is amenability ⟹ no-margin, not RH |
+| `ModularQuotientNoGo` | `PSL₂(ℤ)` abelianization `C₆` is torsion ⟹ every hom to the torsion-free Euler group `⊕ₚℤ` is trivial; the Rademacher/modular lead cannot be a literal group quotient onto the Euler group |
+| `PrimeQuarantineTraceNoGo` | a finite positive defect subharmonic for the raw weighted prime transfer with weight sum `> 1` is traceless; raw `L_σ` is supercritical in the strip, so an RH-false defect must come from the signed/normalized `R_σ` |
 
 ## P — Finite positivity algebra (the square-root / domination mechanics)
 
